@@ -1,0 +1,162 @@
+
+@Fedora 13 Virtualization Guide - Google books.
+The PCI-SIG (PCI Special Interest Group) developed Single Root I/O Virtualization(SR-IOV) specification.
+
+The SR-IOV specification is a standard for a type of PCI passthrough which natively shares a single device to multiple guests. 
+
+SR-IOV does not require hypervisor involvement in data transfer and management by providing an independent memory space, interrupts and DMA streams for virtualized guests.
+
+
+SR-IOV enables a Single Root Function(eg, a single Ethernet port), to appear as multiple, seperate, physical devices. PCI devices 
+
+A physical device with SR-IOV capabilities can be configured to appear in the PCI configuration space as multiple functions, each device has its own configuration space complete with BARs(Base Address Registers).
+
+SR-IOV uses two new PCI functions
+1) Physical Functions(PFs) are full PCIe devices that include the SR-IOV capabilities. Physical Functions are discovered, managed, and configured as normal PCI devices. Physical Functions configure and manage the SR-IOV functionality by assigning Virtual Functions.
+
+2) Virtual Functions(VFs) are simple PCIe functions that only process I/O. Each virtual Function is derived from a Physical Function. The number of Virtual Functions a device may have is limited by device hardware. A single Ethernet port, the Physical Device, may mab to many Virtual Functions that can be shared to virtualized guests.
+
+The hypervisor can map one or more Virtual Functions to a virtualized guest. The Virtual Function's configuration space is mapped to the configuration space presented to the virtualized guest by the hypervisor.
+
+Each Virtual Function can only be mapped once, as Virtual Functions require real hardware. A virtualized guest can have multiple Virtual Functions. A virtual function appears as a network card as in the same way as a normal network card would appear to an operating system.
+
+
+The SR-IOV drivers are implemented in the kernel. The core implementation is contained in the PCI subsystem, but there must also be driver support for both in Physical Function and Virtual Function devices. With an SR-IOV capable device one can allocate VFs from a PF. The VFs appear as PCI devies which are backed on the physical PCI device by resources(queues, and register sets).
+
+
+Advantages of SR-IOV
+
+SR-IOV devices can share a single physical port with multiple virtualized guests. 
+Virtual Functions have near-native performance and provide data protection between virtualized guests
+on the same physical server as the data is managed and controlled by the hardware.
+
+This features allow for increased virtualized guest density on hosts within a data center.
+
+Disadvantages of SR-IOV
+Live migration is presently experimental. As with PCI passthrough, identical device configurations are requested
+for live and offline migrations. Without identical device configurations, guest's cannot access the passed-through
+devices after migrating.
+
+-------------------------------------------INITALIZATION-------------------------------------------------------------
+
+1) void pcie_fab_init_bus(dev_info_t *rcdip, uint8_t flags)
+2) int iovcfg_update_pflist(void) - only intel x86 is supported Sun sparc returns 0
+3) int iov_discover_pfs(void) - 
+	1) pciv_get_pf_list(&nvl);           -fills name-value array with pf_list : calls                       						         pciv_get_pf_list_p = pcie_get_pf_list;
+        2) nvlist_lookup_nvlist_array(nvl, "pf_list", &nvlist_array, &nelem);
+                                                 - get number of elements and nvlist_array
+        3) For all nv pair of pfs
+              1) nvlist_lookup_string(nlist_array[i], "path", &pf_path); - get pf_path (IO device name)
+              2) pciv_get_numvfs(pf_path, &numvfs); - get the number of virtual functions
+              3) iovcfg_pf_lookup(pf_path); - If PF already exists in iovcfg_pf_lisp skip and look at the next one
+              4) iovcfg_alloc_pf("iov-network", pf_path) - iov-network is the class string. malloc for iov_pf_t DS
+                      1) cl_ops = iovcfg_class_lookup(cl_str); - Lookup the class operations based on the class string
+                      2) malloc for iov_pf_t DS and fill pfp->ipf_pathname = path and pfp->ipf_cl_ops = cl_ops, if 
+                         cl_ops is not null then allocate cl_ops->iop_class_alloc_pf(pfp);       
+              5) pciv_param_get(pf_path, &pf_nvl) - compare device info and filter get pf_nv list 
+              6) For all vfs in that pf_nvl 
+                        1) pciv_plist_getvf(pf_nvl, j, &vfplist)
+			2) dump_nvlist((nvlist_t *)vfplist, 0)
+
+
+callstack : 
+1) void pcie_fab_init_bus(dev_info_t *rcdip, uint8_t flags)
+2) int iovcfg_update_pflist(void) - only intel x86 is supported Sun sparc returns 0
+3) int iov_discover_pfs(void) - 
+      1) pciv_get_pf_list(&nvl);           -fills name-value array with pf_list : calls                       						         pciv_get_pf_list_p = pcie_get_pf_list;
+      2) nvlist_lookup_nvlist_array(nvl, "pf_list", &nvlist_array, &nelem);
+                                                 - get number of elements and nvlist_array
+      3) For all nv pair of pfs
+            1) nvlist_lookup_string(nlist_array[i], "path", &pf_path); - get pf_path (IO device name)
+            2) pciv_get_numvfs(pf_path, &numvfs); - get the number of virtual functions
+            3) iovcfg_pf_lookup(pf_path); - If PF already exists in iovcfg_pf_lisp skip and look at the next one
+            4) iovcfg_alloc_pf("iov-network", pf_path) - iov-network is the class string. malloc for iov_pf_t DS
+                      1) cl_ops = iovcfg_class_lookup(cl_str); - Lookup the class operations based on the class string
+                      2) malloc for iov_pf_t DS and fill pfp->ipf_pathname = path and pfp->ipf_cl_ops = cl_ops, if 
+                         cl_ops is not null then allocate cl_ops->iop_class_alloc_pf(pfp);
+
+
+------------------------------------------------------------CONFIGURATION-------------------------------------------------
+
+Network class configuration notes:
+  The configuration and reconfiguration of PFs (and its underlying VFs) are
+done through taskq mechanism. For each PF that belongs to the network class,
+a taskq is created to process config/reconfig. The taskq is created with a
+single thread to serialize processing of operations on the PF.
+
+Configuration:
+Configuration is done when we get a notification from the PCIE framework
+for a given PF, that its VFs have been configured and the class specific
+configuration can safely proceed. We dispatch a task to configure the PF.
+When this initialization task for the PF runs, it iterates over the list of
+VFs under the PF and configures each VF with class specific data. For each
+VF, a mac client instance is opened to its PF, and the properties of the VF
+are programmed in the PF thru mac client interfaces. Note that the mac
+client in this case provides only a control path and the mac layer does not
+setup datapath for such clients (see mac_client_vf_bind()).
+
+Reconfiguration:
+For each PF (and its underlying VFs), any platform specific callbacks can
+be registered for reconfiguration updates. Whenever there is a change to the
+network class props of the VF, the platform specific callback thread would
+invoke the reconfiguration function with the updated data. We don't want to
+process the VF reconfiguration in the context of such platform specific cb
+thread, to avoid delays in its return. Therefore, we dispatch a task from
+the callback function, to handle reconfig (iovcfg_vf_reconfig_task()).
+As a result, there could be multiple updates to the same VF, while some of
+its previous tasks are pending on the taskq. Only the last reconfig task
+updates vf state.
+
+Unconfiguration:
+The configuration of PFs (and their VFs) is torn down only at iovcfg module
+unload time (_fini()). This shouldn't occur as px driver depends on iovcfg
+module.
+
+
+pcie_postattach_child - 2 cases attach and resume 
+  1) case DDI_RESUME: resumes the VF devices. 
+  2) case DDI_ATTACH: check if we have SRIOV capable driver and VFs are configured.
+       1) pcie_scan_assigned_devs(cdip) - Scan the assigned VF before VF drivers attach 
+       2) iovcfg_configure_pf_class(path) - The call below will initiate the process of class
+	    configuration for the PF device. A return code of DDI_EPENDING indictes that the call
+	    has not completed and the  caller has to wait for iovcfg module calling 					          		    pcie_class_config_completed()
+ 	    An example is the setup MAC addresses for the VFs The completion of class configraion is 		 		        	    indicated by iovcfg module calling pcie_class_config_completed()
+	    The HV(maybe hypervisor, hardware virtualization) is sent a READY only after the class 		  		      		    configuration is completed.
+              1) pfp = iovcfg_pf_lookup(pf_path) - get the physical function from the path
+ 	      2) get the class operations from the PF
+	      3) iovcfg_plat_refresh_vflist(pfp) - The platform should have discovered the VFs under this 			              			   PF by now. Otherwise, we give it another chance to build the VF list, before we invoke class specific 		   			   configuration for the PF.
+	      4) cl_ops->iop_class_config_pf(pfp) - dont know what function this function pointer is assigned
+		   to...somehow it should reach iovcfg_config_pf_net
+ 
+		     1) iovcfg_config_pf_net 
+                          1) Process only network class PFs */
+                          2) iovcfg_path_to_macname - Convert PF pathname to mac name
+                          3) ddi_taskq_create(NULL, qname, 1, TASKQ_DEFAULTPRI, 0) - create a task q  
+                          4) iovcfg_set_vfs_state(pfp, IOVCFG_VF_CONFIGURING) - Mark the state of VFs as initializing
+ 			  5) ddi_taskq_dispatch - Dispatch a task to initialize the PF and its VFs 
+                  	        1) iovcfg_pf_config_mac - Perform class specific IOV configuration for the given PF. Open the PF
+                                     device using its mac name first. Then obtain a mac client handle for each
+                                     of its VFs and program the VF props such as macaddr, vlan ids etc.
+                                      1) mac_open(pnp->ipf_macname, &pnp->ipf_mh) - We retry mac_open() in these error cases :
+                                         ENOENT: device is not available yet and EBUSY:	mac is exclusively held
+                                      2) For each vf in the pf 
+                                           1) iovcfg_vf_config_mac - Configure the VF. Note this is not the SRIOV spec VF configuration; 							that is already done by this time as part of the PF driver attach(9E). What we do
+						here is to provide the L2 policies to the PF on behalf of the VF, so that the PF driver can 							validate and restrict the traffic to/from the VF (which might have been assigned to a 							different domain). We open an instance of mac client to the PF driver. We provide the VF-ID 							to the mac layer so it can associate the client with the specific VF in the underlying PF 							driver. We then program the unicast address, vlan ids and bandwidth limits for the VF.
+                                                   1) mac_client_open - open mac client
+                                                   2) mac_client_vf_bind - bind mac client
+                                                         1) rw_enter - Lock the MAC client while changing it's state.
+                                                         2) mac_sriov_ready - Check if the underlying NIC is sriov ready.
+                                                         3) mac_search_group(mip, vf_index, MAC_GROUP_TX) - Search for RX and TX 									groups that correspond the named VF index.
+							 4) mac_bind_group - Bind the groups to the mac client.
+							 5) rw_exit - Let go of the mac client lock.
+                                                   3) iovcfg_add_primary_macaddr - Failed to program primary
+                                                   4) iovcfg_add_alt_macaddr - Failure to add alternate mac addrs will not result in VF
+                                                         configuration failure. This could happen if the client has not reserved any mac 								 address slots (via some devprops that a driver might support) and is requesting 								 more than the avail # slots. We print a warning and allow the VF to finish
+                                                         configuration and be available, although in a less desirable state.
+                                                   5) iovcfg_vf_set_mtu - Failure to set the mtu will not result in config failure.
+
+
+
+                              
+
+                          6) return (DDI_EPENDING) - DDI_EPENDING is returned to tell the framework that class specific config task has 				been kicked off and is pending. When the config task runs and finishes configuration, it will notify the   					framework using pciv_class_config_completed() callback.

@@ -1,0 +1,25 @@
+						TIPS TO IMPROVE PERFORMANCE WHILE WRITING C CODE
+
+
+ 1) Copy the contents of a memory location to a temporary variable and use the
+ temporary variable, if multiple accesses are required to reach the memory
+ location. 
+
+ For example,
+
+in.inner->innermost->a = atoi(argv[1]);
+in.inner->innermost->b = atoi(argv[2]);
+in.inner->innermost->a = in.inner->innermost->a + atoi(argv[3]);
+in.inner->innermost->b = in.inner->innermost->b + atoi(argv[3]);
+
+can be changed to :
+innermost *optvar = in.inner->innermost;
+
+optvar->a = atoi(argv[1]);
+optvar->b = atoi(argv[2]);
+optvar->a = optvar->a + atoi(argv[3]);
+optvar->b = optvar->b + atoi(argv[3]);
+
+
+But, this change has no effect on O2 optimization and above. For O0 and O1 there
+is a reduction in the assembly code footprint.

@@ -1,0 +1,9 @@
+Physical NIC is placed inside a PCIe slot. It autonegotiates the speed with the
+other end it is connected to. When the OS boots, drivers enumerate
+all devices on the board. It figures out the corresponding driver for the
+inserted NIC. 
+
+The driver registers itself to mac. The driver provides the mac with physical
+stats like autonegotiated speed.
+
+

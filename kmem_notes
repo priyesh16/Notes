@@ -1,0 +1,179 @@
+Small Objects:
+
+* less than Page Size / 8
+* Slabs are made of single pages. So Slab base is at the beginnign of the page.
+* Not hashed. So kmem_cache_t.cache_hash_table is NULL.
+
+* Slabs have in-built kmem_slab_t at the end of the slab. Fixed offset from the slab base.
+* Bufs/Chunk are allocated in page size minus size of embedded kmem_slab_t. So no. of chunks = (Page size - size of (kmem_slab_t)) / buf size
+* Allocated bufs are array of buffers.
+* Free list utilizes buf address for bufctl. It uses only the bc_next pointer (fist member) of bufctl, as other two are known
+  - bc_addr, the buf address is bufctl minus cache_bufctl (bufctl is stored at the last 8 bytes of buffer area)
+  - bc_slab, the slab address is at the end of the slab.
+
+* hash table's hash is function of what?
+
+
+
+> ::walk kmem_cache t|::print -ta kmem_cache_t cache_name cache_slab_create
+ffffc100000262f0 uint64_t cache_slab_create = 0x3b
+ffffc10000026618 char [32] cache_name = [ "kmem_alloc_24" ]
+ffffc100000265b0 uint64_t cache_slab_create = 0x7a
+ffffc100000268d8 char [32] cache_name = [ "kmem_alloc_32" ]
+ffffc10000026870 uint64_t cache_slab_create = 0x158
+ffffc10000026b98 char [32] cache_name = [ "kmem_alloc_40" ]
+
+> ::kmem_cache ! grep "kmem_alloc_24 "
+ffffc100000265b0 kmem_alloc_24             0000 00200000       24    19539
+
+> ffffc100000265b0::print kmem_cache_t cache_hash_table cache_chunksize cache_slabsize cache_maxchunks
+cache_hash_table = 0
+
+cache_chunksize = 0x18
+cache_slabsize = 0x1000
+cache_maxchunks = 0xaa
+
+
+## Object size (chunk size ) is less than pagesize/8. So this is not hashed (hash_table == NULL)
+## slabsize / chunksize = maxchunks.
+
+> 1000%18=X
+                aa              
+
+
+> ffffc100000265b0::print -ta kmem_cache_t cache_complete_slabs
+ffffc10000026720 list_t cache_complete_slabs = {
+
+> ffffc10000026720::walk list|::print kmem_slab_t slab_head slab_refcnt slab_chu
+nks
+slab_head = 0
+slab_refcnt = 0xa7
+slab_chunks = 0xa7
+slab_head = 0
+slab_refcnt = 0xa7
+slab_chunks = 0xa7
+slab_head = 0
+slab_refcnt = 0xa7
+slab_chunks = 0xa7
+...
+## These are complete slabs, so we see refcnts equal chunks and head is null.
+
+> ffffc100000265b0::print -ta kmem_cache_t cache_partial_slabs
+ffffc10000026748 avl_tree_t cache_partial_slabs = {
+slab_head = 0xffffc10001f771f0
+slab_refcnt = 0x82
+slab_chunks = 0xa7
+slab_head = 0xffffc10002ecc8b8
+slab_refcnt = 0x8b
+slab_chunks = 0xa7
+slab_head = 0xffffc1000368d4c8
+slab_refcnt = 0x90
+slab_chunks = 0xa7
+...
+
+## They aren't full. Let's look at one of them.
+> ::offsetof kmem_slab_t slab_head    
+offsetof (kmem_slab_t, slab_head) = 0x28, sizeof (...->slab_head) = 8
+> ffffc10001f77fe0-28=J
+                ffffc10001f77fb8 
+
+> ffffc10001f77fb8::print kmem_slab_t
+{
+    slab_cache = 0xffffc100000265b0
+    slab_base = 0xffffc10001f77000 
+    slab_link = {
+        avl_child = [ 0, 0 ]
+        avl_pcb = 0xffffc10002eccfc9
+    }
+    slab_head = 0xffffc10001f771f0      
+    slab_refcnt = 0x82
+    slab_chunks = 0xa7
+    slab_stuck_offset = 0xffffffff
+    slab_later_count = 0
+    slab_flags = 0
+}
+> ffffc10001f77fb8::print -ta kmem_slab_t
+ffffc10001f77fb8 kmem_slab_t {
+    ffffc10001f77fb8 struct kmem_cache *slab_cache = 0xffffc100000265b0      <------ our buddy "kmem_alloc_24"
+    ffffc10001f77fc0 void *slab_base = 0xffffc10001f77000                    <------ Slab's base address and that of page.
+    ffffc10001f77fc8 avl_node_t slab_link = {
+        ffffc10001f77fc8 struct avl_node *[2] avl_child = [ 0, 0 ]
+        ffffc10001f77fd8 uintptr_t avl_pcb = 0xffffc10002eccfc9
+    }
+    ffffc10001f77fe0 struct kmem_bufctl *slab_head = 0xffffc10001f771f0      <------ First Free buffer, by its bufctl.
+    ffffc10001f77fe8 long slab_refcnt = 0x82                                 <------ used buffers of total chunks
+    ffffc10001f77ff0 long slab_chunks = 0xa7                                 <------ total chunks in the slab.
+    ffffc10001f77ff8 uint32_t slab_stuck_offset = 0xffffffff
+    ffffc10001f77ffc uint16_t slab_later_count = 0
+    ffffc10001f77ffe uint16_t slab_flags = 0
+}
+
+## The free list is established by bufctl linkage. The bufctl is not allocated separately.
+## They are embedded in the freed buffer area at the end of it. The bufctl is really 8-bytes here
+## and only the first 8-byte member bc_next is used. The rest of bufctl is known because the slab
+## is of single page
+## -- bc_addr, the address of buf is bufctl - cache_bufctl, a constant,
+## -- bc_slab, the slab is exactly at the end of the page.
+
+> ffffc10001f77fb8::print -ta kmem_slab_t slab_cache->cache_bufctl
+ffffc100000266d8 size_t slab_cache->cache_bufctl = 0x10
+
+> 0xffffc10001f771f0::print kmem_bufctl_t
+{
+    struct kmem_bufctl *bc_next = 0xffffc10001f77328         <----------------- next free buffer
+    void *bc_addr = 0x1e019910000000                         <----------------- not used; garbage
+    struct kmem_slab *bc_slab = 0x12008920400000             <----------------- not used; garbage
+}
+
+> 0xffffc10001f771f0::list kmem_bufctl_t bc_next ! wc -l
+      37
+
+## 37 buffers on this slab are free. We can verify this with the delta of slab_chunks and slab_refcnt.
+
+> a7-82=d
+                37    
+
+## And the used buffers in a slab are generally not 
+
+
+
+HASH TABLE FOR KMEM. 
+
+The hash table is used for objects of size more than pagesize/8
+
+hash is a function of address of buffer divided by the size of the buffer. So two consecutive buffers gets hashed in two consecutive buckets.
+
+hash = ( buf address / size ) & hash_mask
+
+
+<hash_table>,10/nJ|::list kmem_bufctl_t bc_next|::print kmem_bufctl_t
+ffffc10007057790 {                                               <------- hash 0 bucket
+    ffffc10007057790 bc_next = 0xffffc10000585e50
+    ffffc10007057798 bc_addr = 0xffffc10007360000                <----- buffer 1
+    ffffc100070577a0 bc_slab = 0xffffc10007056228
+}
+ffffc10000585e50 {
+    ffffc10000585e50 bc_next = 0
+    ffffc10000585e58 bc_addr = 0xffffc10001f80000
+    ffffc10000585e60 bc_slab = 0xffffc10000586f48
+}
+ffffc10007057778 {                                               <------- hash 1 bucket
+    ffffc10007057778 bc_next = 0xffffc10000585e38
+    ffffc10007057780 bc_addr = 0xffffc10007360200                <----- buffer 2
+    ffffc10007057788 bc_slab = 0xffffc10007056228
+}
+ffffc10000585e38 {
+    ffffc10000585e38 bc_next = 0
+    ffffc10000585e40 bc_addr = 0xffffc10001f80200
+    ffffc10000585e48 bc_slab = 0xffffc10000586f48
+}
+ffffc10007057760 {                                               <------- hash 2 bucket
+    ffffc10007057760 bc_next = 0xffffc10000585e20
+    ffffc10007057768 bc_addr = 0xffffc10007360400                <----- buffer 3
+    ffffc10007057770 bc_slab = 0xffffc10007056228
+}                     
+So the buffer 0xffffc10007360000 is on the hash 0 bucket, the next address 0xffffc10007360200 is on the hash 1 bucket.
+
+
+
+

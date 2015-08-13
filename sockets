@@ -1,0 +1,284 @@
+
+-> The networking stack is catogorised into 5 layers (Internet Protocol suite). 
+	-> Link Layer : MAC(Ethernet, FDDI), ARP, OSPF
+			-> OSI : Physical, Datalink  
+	-> Internet Layer : IP, ICMP, IPsec 
+			-> OSI : Network layer 
+	-> Transport Layer : TCP, UDP, SCTP
+			-> OSI : Transport layer
+	-> Application Layer : DHCP, HTTP, RIP 
+			-> OSI : Application, Presentation, Session
+
+-> Streams implements each of these layers as modules. A stream consists of a
+list of modules connecting the application and the driver. This creates a full
+duplex data path between a process in user space and a STREAMS driver in kernel
+space.
+
+-> When an application opens a device file for a STREAMS character device, the
+kernel creates a stream. It contains 3 parts. 
+	-> stream head : 
+		-> converts system calls into stream equivalent functions
+		-> converts driver messages into data which the application can read.
+	-> device driver : 
+		-> interfaces with the device.
+	-> optional modules. 
+		-> eg IP instance or TCP instance.
+
+-> Each streams modules contains a read queue and write queue, messages going up
+to the application goes via the read queue and message going down to the driver
+goes via the write queue.
+	-> This way flow control can also be accomplished.
+
+-> To simplify locking and multithreading, STREAMs framework provide locking mechanism
+   called perimeters. There are two types
+        -> inner : 
+                -> PERMOD : encloses all queues cannot be used with outer perimeter
+                -> QPAIR  : each pair of queues have a perimeter
+                -> PERQ   : each queue has a perimeter  
+        -> outer :
+
+-> Inner perimeter by default is entered exclusively. This behaviour can be modified by
+        -> OCEXCL : open and close is invoked exclusively at the outer perimeter
+                    (usually it is shared)
+        -> PUTSHARED : put is invoked shared at inner perimeter. (usually it is exclusive) 
+
+-> A streams module can be configured to have an inner, outer or both perimeters, since 
+   these perimeters are per module or per protocol stack layer these perimeters are called
+   horizontal perimeters. For eg)
+        -> TCP uses a STREAMS QPAIR perimeter
+        -> UDP uses a STREAMS QPAIR with PUTSHARED
+        -> IP a PERMOD perimeter with PUTSHARED 
+
+-> STREAMS had performance issues and moved away from it:
+        -> The cost of creating a STREAM was high, but pre-2000s connections were usually 
+        long lived like NFS, FTP. But, later web based connections where short lived and a
+        lot of them, eg booking ticket in IRCTC.
+        -> Threads working in STREAMS, by design did not have any CPU affinity. With NUMA
+        centric machines, packet processing for a particular connection moved around CPUs
+
+-> The horizontal perimeters causes packet processing to be processed in more than one CPU
+   and more than one thread causing excessive thread context switching and poor CPU data 
+   locality. 
+
+-> To improve performance, an IP classifier and serialization queue was introduced.
+        -> serialization queue moves from per data structure locks (like in STREAMS) to a per CPU 
+           sych mechanism called vertical perimeter. This vertical perimeter is abstracted into the
+           squeue datastructure.
+                -> Each squeue is bound to a CPU, and each connection is bound to an squeue. This 
+                   provides any synchronization and mutual exclusion required for the connection.
+                -> squeues guarantees only a single thread can process a given connection at any given
+                   time.
+                -> It is similar to QPAIR perimeter but instead of just a module instance, it protects
+                   the whole connection from IP to sockfs.
+                -> Squeues are created per H/W execution pipeline, i.e per core or hyper thread.
+                -> So, if there are 4 cpus on a machine there will be 4 squeue, when each packet arrives
+                   it will queue on the squeue, and the packet structure has info about the connection, 
+                   and this way squeues can process packets for a connection on the same CPU.
+                -> Also, since only a single thread process an squeue at a time. Connection structures are
+                   MT safe without additional locking.          
+        -> connection lookup is done outside the perimeter using IP classifier. So all the packets
+           for a particular connection can be identified and processed by the squeue.
+                -> IP classifier also is a database for storing a sequence of function calls
+                   necessary for all inbound and outbound traffic, making the stack move from STREAMs
+                   message passing interface to BSD like function call interface.
+
+
+-> When a packet arrives on a NIC, the NIC interrupts the CPU. This interrupt thread sends the packet
+   to above layers. 
+        -> Since, this is an interrupt thread it should complete fast and shouldn't be waiting
+        for other threads to get CPU cycles. If packet processing is going to take time, the task
+        of interrupt thread is passed on to worker threads.
+
+-> The squeue processing by the worker and interrupt threads follow the following processing model
+        -> Queueing Model : The queue is strictly FIFO, this ensures that no particular connection is starving.
+                Both read and write thread enqueues packets, at the end of the chain. 
+        -> Processing Model : After enqueuing the packet, if another thread is processing the squeue, then it
+                will return and the packet is draining of the packet is deferred. If the squeue is not being
+                processed then it will process the packet.
+        -> Draining Model : A thread that successfully processes its own packet, can also drain any packets that
+                are enqueued, either before it started processing, or packets that arrived while it was processing
+                its own packets. But, if it is an intrupt thread, it can't keep draining all incoming enqueued 
+                packets, so the drain model can be
+                        -> "always queue"
+                        -> "process your packet if you can"
+                        -> "time bounded process and drain"
+                -> usually interrupt threads are "time bounded process and drain". 
+                -> write threads can be "time bounded process and drain" or "process your own"
+                -> If interrupt thread takes long time, it can signal worker threads
+                        -> if packet arrival rate is low, worker thread should wake up immediately after interrupt thread 
+                           finished processing/draining.
+                        -> if packet arrival rate is high, then delay waking up of worker threads so that next interrupt
+                           thread only will process the squeue. Default is 10ms.
+            
+-> Binding of squeue to a CPU can change (for DR, when CPU goes offline), but connection is always bound to squeue.
+
+-> The CPU is bound to squeue based on relative speeds of CPU and NIC.
+        -> If CPU is faster than NIC : incoming connections are assigned to squeue instance of interrupted CPU. For, outbound
+           application it is bound to the CPU the application is running.
+        -> If NIC is faster than CPU : A single CPU can't handle the traffic, so it is bound to all available squeues, in
+           a random manner.
+        -> If packets arrive on multiple NICs, they are processed on the squeue the connection originally established on. 
+
+-> IP Classifier
+        -> contains 3 tables
+                -> 5 tuple hash table - protocol, remote and local IP, remote and local port for established TCP connections
+                   (connected table)
+                -> 3 tuple hash table - protocol, local address & local port, for listners (bind table)
+                -> single tuple hash  - prtocol listners
+        -> After lookup conn_t connection structure is obtained.
+                -> conn_t maintains the squeue structure. Packet lookup is done outside the perimeter and then packet is 
+                   processed on the squeue connection of the conn_t is attached to.
+                -> conn_t maintains read and write side function pointers. This makes it function call style than
+                   STREAMs style
+                -> listen call creates an entry to the bind table, once the tcp handshake is complete, then it is added to
+                   connected table.
+
+-->
+TCP
+
+-> Interface between TCP and IP is changed from message passing to function call based post FireEngine. Outbound side TCP 
+   passes fully prepared packet directly to IP by calling ip_output(), while being inside the vertical perimeter. It actually
+   need not call IP it can directly do a putnext to link layer driver if it has access to IRE(Route Entry).
+
+ 
+-> int socket(int socket_family, int socket_type, int protocol); 
+	-> socket() call creates a socket. 
+	-> This creates a stream. Based on socket option modules are pushed onto the
+	stream. For eg) TCP or UDP over IP modules may be pushed to the stream. 
+	-> It returns a file discriptor on which we can read and write as if the
+	socket were a file. Sockfs takes care of abstracting socket as a file. 
+	-> Internally a socket may be implemented as a pair of queues of the streams
+	head. The stream head takes care of reading and writing from the queue such
+	that it looks like it is reading or writing from a file. 
+
+-> int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+	-> bind() associates the opened socket to a local address and port. 
+	-> This is done so that any packet which comes with this local address and
+	port should go to this socket.
+	-> Internally, IP has a classifier table where this entry is stored. IP reads
+	the TCP header of any  inbound packet and if it matches with this address 
+	and port, the packet is forwarded to the corresponding TCP stream.
+	-> Usually, we bind with local address as INADDR_ANY. This means it has
+	bound to all interfaces on the machine. So programmer doesn't need to know
+	the IP address of the interfaces. 
+
+-> int listen(int sockfd, int backlog);
+	-> listen() marks the socket as a passive socket and accept() will be used
+	to accept incoming connection requests.
+	-> Internally, this issues another bind request, and changes the backlog.
+	This backlog represents the max. number of pending connections for sockfd.
+
+-> int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
+	-> connect() connects the socket to the remote address
+	-> For TCP it sends a SYN packet to the remote address
+-> int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+        -> It extracts the first connection request on the queue of pending connection, creates a newly connected
+           socket, and returns a file descriptor referring to that socket.
+        -> The sockaddr is filled with peer socket's address
+        -> accept fails with EAGAIN if no connections are present and it is non blocking
+        -> use select or poll on the socket to know if incoming connections.
+        -> Till accept completes an incoming connection will be an eager connection, after 3 way application
+           it will be put to another eager queue. This is done to avoid SYN flood attacks (send SYNs with unreachable 
+           hosts so that server will waste resources and fills its queue so that it can handle no more connection)
+-> int close(int fd)
+        -> close the fd and the stream opened.
+        -> closing the queue and references to TCP are decoupled. So user closes just closes the stream and don't free up
+           the TCP datastructures, and it may continue to stay around through FIN/ACK and TIME_WAIT stages. This is called
+           detached TCP.
+ 
+
+-->
+UDP
+
+-> UDP's sockfs extension directly can call UDP and UDP can directly call GLDv3
+
+
+--> NIC and OS working
+        -> OS maintains a series of buffers, which are used for frame headers and contents.
+        -> OS also maintains a queue or ring of buffer descriptors, to indicate where the buffer resides and size of buffer
+        -> Each transaction between OS and NIC is in terms of buffer descriptors.
+                -> If OS needs to send data. NIC must process the buffer descriptors which are filled by the OS with buffer details.
+                -> If OS needs to recieve data. It will make sure buffer descriptors point to free memory available for NIC so that 
+                   after NIC uses of the memory, the NIC can send back completed buffer descriptors with the size of the rx'ed frame.
+        -> Tx Case
+                -> OS builds a buffer descriptor to send a frame in host memory
+                -> OS sends NIC a mailbox event stating buffer descriptor is ready to be fetched and processed.
+                -> NIC does a DMA read on the buffer descriptor and process it.
+                -> NIC reads host address and NIC initiates a DMA read of frame contents
+                -> When all segments of the frame has arrived(could be several buffer descriptors), NIC transmit the frame to the Ethernet.
+                -> Depending on how OS configured the NIC, it may interrupt the host that frame is completed.
+        -> Rx Case
+                -> OS creates free buffer descriptors, NIC reads these descriptors into local NIC memory via DMA.
+                -> NIC rx'es the frame to its local buffer from network
+                -> NIC does a DMA write on the buffer descriptor(s).
+                -> NIC fills in size details and possibly checksum information with a DMA write operation on the host.
+                -> Depending on how OS configured the NIC, the NIC may interrupt the host to indicatef frame has arrived.  
+
+        -> DMA can be avoided if hardware supports DARAM(Dual Access RAM). 
+                -> Memory on card can be mapped to kernel. Once in kernel space, data buffer can be manipulated as if it were kernel's memory
+                -> STREAMs provides esballoc/freeb for this purpose
+
+--> Checksumming
+        -> Application may or may not do checksumming
+        -> TCP : Header contains checksum field. Data and headers are checksummed. 
+                -> So overhead for TCP to read the entire data.
+        -> UDP : Header contains checksum field. Data and headers are optionally checksummed.
+        -> IP  : Header contains checksum field. Only IP header is checksummed.
+        -> Ethernet : Entire packet is checksummed. Algorithm used has high degree of error detection.
+        -> At Ethernet level checksumming algorithm is very good.
+        -> ICMP, IGMP like TCP and UDP has checksum field in their header to checksum their payload and header.
+           IP uses only header checksumming
+                -> All of them uses the unsophisticated 16 bit 1's compliment of the 1's compliment of all 16 bit words in the 
+                   header and not the sophisticated CRC checksumming algorithm. 
+        -> Hardware checksum : Modern NICs do 16 bit 1's complement checksum(inetcksum), as used by IP and TCP in hardware.
+                -> Checksum offloading to hardware improves performance.
+                -> At tx side driver will get info about checksum offload from stack and pass it on to hardware
+                -> At rx side if driver advertises hardware checksum capability, then stack will accept full or partial checksum        
+                -> Solaris defines two classes of checksum offload
+                        -> Full : Assuming hardware can parse protocol headers, complete checksumming is calculated in hardware.
+                           This includes checksumming of psuedo-header checksum for TCP and UDP packets.
+                        -> Partial : "Dumb". Based on start and end offsets describing span of checksummed data 1's complement checksum
+                           is calculated.
+                -> Non-fragmented IPV4 case is supported by most hardware, though IPV6 is not, so IPV4 can be offloaded.
+                -> For checksumming fragmented IP case: 
+                        -> on the tx side, NIC must buffer all IP fragments or it must fragment in the NIC itself.
+                        -> on rx side, most full and all partial checksum hardware can compute the checksum and give to network stack
+                           and at reassembly in IP module, combining individual checksum we can get checksum of the unfragmented datagram
+
+--> Zero Copy
+        -> Earlier it was 2 Copy TCP
+                -> One copy from user buffer to kernel address space
+                -> Another copy from kernel memory to device memory by device memory (coz DVMA setup was too slow)
+                   DVMA is Direct Virtual Memory Access, The advantage of DVMA is that pages need not be physically contiguous
+                   it is enough if they are virtually contiguous.       
+                -> Plus one data read to calculate TCP checksum.
+        -> 1 copy TCP
+                -> DVMA setup functions improved, and kernel data buffers could be doubly mapped to IO address space, eliminating copy
+        -> Single copy + checksum
+                -> Delay slots in memory copy loop allowed TCP checksum to be done while data is copied from user space to STREAMS message
+                -> This eliminated extra read of the data
+                -> To do this Synchronous STREAMS were introduced. 
+                        -> Usually system call constructs a uio structure that holds memory information in the user space
+                        -> For a normal driver write, a function like copyin or uiomove is done to transfer uio memory to kernel space by the
+                           driver entry point.
+                        -> For STREAMS, the stream head does the uiomove to a STREAMS message, and then subsequently move the message downstream
+                           using putnext, which can be queued. Hence it is asynchronous.
+                        -> For TCP to do checksumming while copying to kernel space it has to have access to address space of the thread issuing 
+                           the read/write.
+                        -> Synchronous STREAMS, moves the uio memory till a kernel module aka synchronous barrier (coz till this point 
+                           the message is processed synchronously on the same thread)
+                        -> It is the responsibility of synchronous module to do the copyin/copyout.
+                        -> So Solaris can make use of TCP as a synchronous module so that it can do TCP checksumming while copyin.
+                        -> Also, for greater efficiency, TCP uses delay slot instructions for checksumming (so you can use of pipelining)
+                        -> The synchronous module does the copyin/copyout between user and kernel space.                
+        -> Zero copy TCP
+                -> It avoids remapping buffer between user and kernel
+                -> Zero copy only applicable with networks with MTU > page size eg) FDDI, ATM but not Ethernet.
+                -> Send side user buffer is mapped to kernel and COW bit is set to detect writes.
+                -> Rx side, kernel buffer is page flipped to user buffer (page is flipped from user to kernel by doing some page table 
+                   manipulation).
+                -> But due to TLB shootdowns, don't scale with no. of connections and no. of cpus.
+               
+        
+
+
