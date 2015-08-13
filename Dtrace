@@ -1,0 +1,7 @@
+sched for scheduling..when thread goes out and comes on a thread
+
+lockstat -> mutex is written partially in C and partly assembly so no proper
+epilogue or prologue..so seperate probe.
+
+tailent
+

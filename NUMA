@@ -1,0 +1,7 @@
+leaf is the closest and root will be the farthest to your locality
+
+
+mnode correspond to leaf group..mnode is vm2 memory.
+
+lgroup represent latency.
+

@@ -1,0 +1,18 @@
+Motherboard is physical the physical arrangement in a computer that contains the
+computer's basic circuitry and components.
+
+the computer components included in the motherboard are:
+
+The microprocessor
+(Optionally) coprocessors Memory
+basic input/output system (BIOS)
+Expansion slot
+Interconnecting circuitry
+
+
+SMP is processing of programs by multiple processors that share a common
+operating system and memory.
+
+1 chip is divided into ave processors which have multiple cores and each core
+can have multiple “threads”. The difference between a core and a thread is that
+separate cores have se

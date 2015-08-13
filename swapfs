@@ -1,0 +1,18 @@
+When we create a process we need to reserve memory for anon pages in swap.
+This is because if we have to page out..for non-anon pages we have backup
+in filesystem..but for data segment and other anon pages we dont have any
+place to back it up..this is why when we create a process and malloc or do
+any opertion that involves anon pages we need to allocate memory is swap
+so that we have a place to back it up, when we have to page.
+
+Now this swap space is actually virtual swap space which is physical memory
++ actual disk swap space. This is done
+
+
+swap unit is called block, not page.
+
+root@solaris11:~# swap -sh
+total: 319M allocated + 188M reserved = 504M used, 2.9G available
+
+allocated - reserved but allocated in maim memory
+reserved  - reserved but not allocated in main memory

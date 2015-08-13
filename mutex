@@ -1,0 +1,3 @@
+mutex is just a 8 byte pointer..and once u call mutex_enter the thread is put
+into the stack. We know that threads are 8 byte aligned..so we know that it is
+always zero. So we can use these 3 bits for other purpose, like flags.

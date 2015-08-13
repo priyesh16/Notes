@@ -1,0 +1,99 @@
+
+sched is actually swapper
+what is idle() - priority -1
+
+mdb -k
+::threadlist gives all kernel threads. If no LWP then it is a
+system thread (i.e it doesn't have a user process)
+
+
+what is death row - thread_reaper()
+
+if ::threadlist -v
+no cv_wait() - it is hanging
+mutex_enter() - deadlock
+
+
+pstat - zombie is child called exit, but parent doesn't reap it.
+        kill the parent, init will reap. else reap() function
+        idle -> somebody who is forking ..we dont want to swap it out
+        pstat is used for these stats
+
+p_tlist ->  list of kernel threads
+
+only 80 chars of args are there in psargs if more than 80 then dynamically
+allocated at kernel..this is who pargs gets the args.
+
+256 files can be opened by a process. But, we can modify more that uptil
+int.
+
+klwp_t  structure:
+
+if u are not executing then ur regs are saved at lwp_pcb.
+
+
+major fault - disk io
+minor fault - dont involve io, but in kernel all faults are minor fault and wait
+for major fault to confirm.
+
+kthread_t
+
+t_bound_cpu - bound on one cpu
+
+wchan
+    -> cv
+    -> mutex
+    -> sem
+    -> rw
+
+microstate - what are you waiting info
+
+
+processor group or set -> group processers to be on only one cpu
+
+cpu structure
+
+--> per cpu structure
+
+--> when dispatch thread is not the last thread on the cpu that means interrupt
+was run.
+
+Interrupts
+
+adaptive mutex is either block or spin based on if owner is running on the
+cpu(spin - most likely will be done in some time) or no(block)
+
+synch obj
+
+1) mutex
+    -> adaptive - below 10
+    -> spin - above 10 will spin
+    -> driver - driver doesnt know so kernel will figure out,whether spin,
+    adaptive
+    -> default - adaptive
+
+sparc -> cas instruction, compare and swap
+    -> cas check if mem register ==  register1
+    -> regester2 = mem register
+
+turnstile -> -> for mutex and rwlocks.
+            -> earlier sleep queues, but couldnt scale because 64 sleep queues.
+            cant hash it because lot of time after releasing a lock.
+            -> sleepq per thread bcoz one thread cant wait for more than one
+            lock.
+
+semaphore -> break prioriy inheritance so no need.
+
+rwlock  -> multiple reader or writer
+        -> expensive because u need a mutex to make sure multiple cpus can
+        change the writer count correctly.
+        -> writer starvation if readers dont allow it write due reader.
+        -> reader starvation if writers dont allow readers
+            unwritten rule
+                -> dont use if data is changing
+                -> dont use if huge data
+                -> dont use if u dont have multiple readers in one time..use mutex.
+
+
+remainder is got by 512 & 2^-1 ie 511
+

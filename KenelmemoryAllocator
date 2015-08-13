@@ -1,0 +1,25 @@
+1) get range of Virtual Address 
+2) get range of physical address
+3) mmu structures
+4) mutex_init()
+5) condition variable cv_init()
+6) ref count
+7) put the structure in a linked list
+
+--> problem is each time u allocate u have to do all 7 steps...so better keep 
+it in memory, but then kernel memory is unswappable so unwated space.
+
+--> client would specify the name of the cache, and then pointer to create and
+destroy of the funtion, also specify size and allignment of the object
+
+--> server would take care of low mem. slab contains a page or more of kernel
+memory. each slab is segregated based on size. so if low on memory then unused
+will get freed. it has stats, debug stuff like deadbeef and baddcafe. Also
+alignmnet so that it will spread the data and not create hotspots.
+
+--> kmem_alloc and kmem_cache_alloc, cache is to check if we already have that
+in the cache
+
+
+
+

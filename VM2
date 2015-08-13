@@ -1,0 +1,94 @@
+FED - freelist equity distributer
+CRD - credit for a lock..
+wallet - wallet holds ur CRD
+breadline - wait in this line
+soupline - if u cant get in breadline called soupline
+
+pagecoloring - placing data within cache to spread out the data.
+				to prevent lock contention issues.
+				
+
+advantage of kernel cage
+
+bounce predictor 
+	- predicting large pages for both user and kernel
+
+100 MB of memory for every 100 Hz of cpu
+
+
+page coalescing
+
+
+floorwaxes - SNL
+
+
+size of page structure - 128 bits.
+
+from vnode and offset do a hashing algorithm to get page.
+
+
+tile is granularity for NUMA placement and lock contention
+
+
+::tile -v
+M - holding lock
+ID - 
+MGROUP - power management, idea didnt pan out
+MNODE  - mnode number
+Priority - dont allocate this part..for example old 32 bit drivers can only use
+that memory
+Kernel - available - 
+		grow - 
+
+T is type- k is kernel pages, u is user pages, + user and kernel pages
+
+cache list - 
+
+borrow	-	user borrowed a page from a kernel page.
+
+good segway - not related
+
+256 tilets per tile. A given tile need not be tile.
+a given tilet are divided to pages of page size
+
+kernel grows per tilet not per page.
+
+tilechunk is one or more tilets and contiguous tile. and it is at least as big
+as the largest page for that system. So now we can accomodate more than the
+highest page
+0
+
+
+memgrp is same is memnode..and not used as no gain in power save over overhead
+
+::szc  - page size
+
+
+more page sizes means memory access is 7 pico seconds extra..so thats a
+problem..
+
+
+mnode so that we get locality of reference.
+
+why large pages - less TLB misses, simplifies address translation and less
+translation requires for same file.
+
+problems with large pages - 4m page is actually contageous 4kpages..so if we
+dont have enough memory then relocate other pages to make room...also if we
+evict the pages then we have to break up the big page into small pages because
+we don't know if swap has enough free 4m space to put this big page in..so lot
+of overhead.
+
+
+if page size is as big as cache then no color
+
+2mb cache page size of 512k then 4 colors
+
+kernel cage should be a bit spread out otherwise bus contention as everybody has
+to access kernel cage.
+
+breadline - for each mnode
+
+taskq thread is used for asynch processes.
+
+

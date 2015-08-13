@@ -1,0 +1,32 @@
+we didnt use RT for a long time in unix  because
+	-> we couldn't lock pages.
+	-> kernel was not preemptable, then we used multithreaded program, so now 
+	we can lock the RAM.
+	psrinfo -i to stop interrupts on a cpu
+
+in x86 u cant do floating point in kernel because u dont save register from
+kernel to user.
+
+group of process is task
+group of tasks called project
+
+0 shares of cpu time means if all other processes are idle then start this
+process. 
+
+
+we have dispatch queues for each priority. 
+we need lock on dispatch queue, aka schedlock(spin lock). more than 4 cpus we 
+were having contention, so now every cpu has a dispatch queue.
+
+
+sleep queue - voluntary - like waitng for resource, 
+dispatch queue - involuntary - like preemption or o
+
+cv_wait - good sleep - waiting for disk io
+cv_wati_sig - bad sleep - waiting for network io - can be killed by signal
+cv_wait_sig_swap - terrible sleep - killed by signal and can swap the process
+also.
+
+stopped
+
+idle state - when creating the process.

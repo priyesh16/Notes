@@ -1,0 +1,12 @@
+VBoxManage list vms
+"Solaris11.1-Internals" {8b86ee11-62e5-41ec-a96d-a0c3422fe626}
+
+bash-4.1$ VBoxManage startvm Solaris11.1-Internals --type headless
+Waiting for VM "Solaris11.1-Internals" to power on...
+VM "Solaris11.1-Internals" has been successfully started.
+
+bash-4.1$ VBoxManage showvminfo Solaris11.1-Internals
+
+bash-4.1$ VBoxManage controlvm Solaris11.1-Internals poweroff
+
+

@@ -1,0 +1,77 @@
+Oracle Solaris 11 Internals
+The Solaris 11 Internals course provides students with information about the various kernel subsystems, routines, and structures that make up the Solaris 11 Operating System. Students will use Solaris Dynamic Tracing (DTrace) to step through process creation, execution, signal delivery, and scheduling; correlating observations with source code. The hands-on labs make extensive use of the dtrace, kmdb, and mdb commands to examine the system structures on live systems. The kernel subsystems covered include the multithread architecture, hardware memory management, software memory management, VM2, scheduling, process lifetime, signals, paging and swapping, and the swapfs file system.
+
+Course Objectives:
+
+
+--> Introducing the Solaris 11 Operating System
+Define the purpose of the operating system and explain the concept of kernel layering
+Explain and diagram the segments that make up the process address space
+Explain the trap mechanism
+Differentiate between hardware and software interrupts
+List the new features in recent releases of the Solaris 11 OS
+Start using tools such as mdb, kmdb, and DTrace to examine kernel data structures
+
+--> Examining the Multithread Architecture
+Explain the difference between symmetrical multiprocessing (SMP) and asymmetrical multiprocessing (ASMP)
+Define an application and a kernel thread
+Define a lightweight process (LWP)
+Explain the difference between a thread and an LWP
+List the structures that describe the state of a kernel thread, an LWP, and a process
+Explain how a mutex lock works
+Define a condition variable
+Describe how a counting semaphore is implemented
+
+--> Hardware Memory Management
+List the steps involved in virtual-to-physical address translation
+List the differences between the x86/x64 memory management unit (MMU) and the SFMMU
+Describe types of cache implemented on Sun systems
+Explain the purpose of the hardware address translation (HAT) layer
+
+--> Examining Software Memory Management
+List the layers of the SunOS 5.10 software virtual memory (VM) system and define the role of each layer
+List the mapping structures that make up process address space
+Locate the page structures and process address space structures in mdb or DTrace and identify the fields within the structures.
+Explain how the memory mapping and memory control system calls can be used by an application programmer to effectively manage process memory needs
+
+--> VM2
+Explain the motivation of VM2
+Describe the Capture mechanism
+List the advantages of the Kernel Cage
+Describe the Bounds Predictor
+Use mdb –k dcmds to examine VM2 structures
+
+--> Examining Paging and Swapping
+Explain the layered approach to page-fault handling
+List the conditions under which the page daemon runs
+List the functions of the page daemon
+List the conditions under which the swapper runs
+
+--> The swapfs File System
+List the shortcomings of the SunOS 4.x software swap management
+Describe the changes that were made to the anonymous memory layer to accommodate the implementation of the swapfs files system
+List two advantages obtained by adding the swapfs file system to the SunOS 5.x software.
+
+--> Scheduling
+List at least two major barriers to real-time processing in the traditional UNIX architectures
+Explain the difference between a fully pre-emptible kernel and a kernel with preemption points
+Describe how the dispatch queues are implemented
+List a routine used to place a thread on a dispatch queue
+Describe when a thread is placed at the head of a dispatch queue
+
+--> Process Lifetime
+Explain the differences among the system calls used to create a new process
+Describe the kernel routines used to implement process creation
+List the different types of executables supported in the Solaris 11
+Explain the routines used to implement Executable and Linking Format (ELF) executables
+List the advantages of the ELF executable format
+Describe the actions taken by a process when it exits
+Explain the waitid(2) system call and how it is implemented
+
+--> Signals
+List the different types of signals that can be delivered to a process or thread
+Explain the difference between a trap signal and an interrupt signal
+List the signal management routines and describe their functions
+Describe how a signal is posted and delivered to a process
+Describe how a pending signal is promoted to the current signal
+Describe how the signal handler is invoked.

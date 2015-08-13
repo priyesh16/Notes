@@ -1,0 +1,72 @@
+-->
+Range of Priorities
+0 - 59 -> TS, IA(desktop), FSS, FX - user process
+60 - 99 -> SYS, kernel thread ; 0 and 60 is used for system duty cycle that is
+			used by zfs for checksumming.
+100 - 159 -> RT
+160 - 169 -> Interrupts if no RT (then 100 to 109)
+
+
+--> what is vfork, why is it removed
+
+--> group of processes into a task, and group of task go to project.
+
+--> Kernel manages process, filesystem, memory, io
+
+--> Filesystem uses buffer cache.
+
+--> Minimum memory can read from disk is one block. From disk u can take one
+sector ie is 512 bytes. filesystem minimum block is one page. in physical memory
+page depends but usually 4k.  
+
+--> Virtual buffer cache handled by segmap drriver. 12% above main memory. 
+
+--> LRU - least recently Used  memory is removed out of buffer cache.
+
+
+--> main memory has kernel, then all page structure from filesystem and swap.
+page structure has vnode and offset or page name or page identity.
+
+--> inode has attributes, track of where it is in the fs and other stuff in ufs.
+nfs has rnode. tmpfs has tempnode zfs has znode. vnode is virtual encompassing
+all fs. it also has operations to be done for the particular for the fs.
+
+--> when main memory gets filled. paging daemon  comes in and kicks out of main
+memory Not recently used NRU. This is a problem because if i pull a large file
+then rest of the process gets kicked out. So it gets pushed to free list. This
+is different for zfs. zfs uses arc. Adaptive r    cache. it has lru and
+fru(frequently used) and this is how it is different from buffer cache.
+
+--> what is l1 arc l2 arc, ssd ?
+
+--> character device like dd, fdisk is a character interface for block device
+
+--> on structure
+		--> common - common to all architectures, high level code for system
+					call
+			os -> 
+			sun4u -> ultrasparc -> M series
+			sun4v -> v - hypervisor -> hardware strands, firmware code
+			i86 ->
+			pci86 ->
+			amd64 -> 
+					
+		--> 
+	
+--> mmap mapping to user and kernel address space.
+
+--> to translate virtual address to physical address -> this is done by MMU.
+	if it is not there in physical memory. then u have to figure out using
+	vnode and off.
+
+--> IPC -->
+			shared memory -> semaphore, message queues
+			pipes         -> fifofs implements pipes
+			signal		  -> 
+			doors		  -> doorfs -> run a thread in someone elses address
+							space. no context switching is done door client
+							tells server to start. Server inherits all
+							properties from the client including TS and
+							priority and once server executes
+							it will tell client to start.
+			

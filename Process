@@ -1,0 +1,83 @@
+--> sparc has 128 window regester so after 8 procedure it has to recycle the
+windows this is called window overflow.
+
+--> These regester per hardware thread. This high number of register has impact
+on clock speed as now cpu has to access more number of registers.
+
+--> g0 has 0 
+
+--> g7 has current thread address
+
+--> brk and sbrk to increase heap size..u can also use malloc it calls brk
+
+--> ulimit shows maximum stack size
+
+--> mmapped files have libraries...first one is ld.so.1, 
+
+--> if mmap meets heap memory then ENOMEM
+
+--> ps -cle
+
+--> text segment doesnt start with 0x0 is because if seg faults happens, then
+if it is 0..then it is valid address and program starts again. So we have to 
+skip one page. Max page size earlier was 64k before ABI. This is 10k in decimal.
+
+--> 64 bit address space.
+
+--> largest mem in craig systems = 2^36
+	page size	is 8k pages		 = 2 ^ 13
+	no. of pages				 = 2 ^ 23
+	page structure				 - * 2 ^ 6 = 2 ^ 39
+
+--> if we continue to use 32 bit then page structure wont fit. userland
+application is written in 64 bit because then it access more than 2^32 that
+is 4G.
+
+--> we do pmap on pid we get the stack.
+
+
+--> process has proc structure, and user structure(this can be swapped out).
+page daemon kicks out page, swapper kicks out entire address space.
+
+--> but user structure got so small then no need to swap. but then klwp also
+got relative smaller. now only kernel stack can be swaped...so only swapper
+not page deamon can swap kernel stack..now kernel stack is about 6kb so no
+need to swap that also..so now only flag is set to not runnable.
+
+--> asynchronous can be ASTs..this is if u are lower priority and somebody
+preempts u.
+
+
+--> moving from user stack to kernel stack..one thread for user stack..one
+kernel stack for kernel thread...moving from uland to kernel. cpu saves regs
+to lwp_oldcontext. now move args to kernel address space as they are different..
+now we are in system time not user time..then syscall_entry() maps number to
+sysscalls. 
+
+--> if u have microkernel then u will have mulitple back and forth between 
+kernels..that is why monolithic kernel is practical.
+
+--> kstat -> vmstat, mpstat, iostat, sar, nfsstat
+--> procfs -> truss, process tools (pmap, pargs), ps, prstat(top), for debuggers
+--> mdb 
+--> dtrace -> lockstat, interstat, dtrace scripts
+--> cpustat 
+--> swap
+
+--> 
+--> interrupts above 10     -> 
+--> interrupts 10 and below ->  
+--> clock is at 10 -> each clock ticks at 100 per sec. lbolt from boot time.
+						real time process needs mode granularity. if hirestick
+						is set to 1. then hireshz = 1000. but this will block
+						all interrupts from 10 and below. so cpu will only do
+						clocking. tickreg and tick_compare is used to get mor
+						granularity. syclick subsystem does this. So if cpu runs
+						at 1GHZ we can get to nanasecond.
+
+--> each clock tick we have to do so much accounting. 
+
+--> cross call will use another cpu.
+
+--> if we have more that a lot of cpu, like more than 64 cpus..then all
+accounting is done by another cpu.

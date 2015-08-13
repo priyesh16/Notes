@@ -1,0 +1,90 @@
+-> all system calls return -1 on failure.
+
+-> o
+
+Max procs on the system.
+> max_nprocs/E
+max_nprocs:
+max_nprocs:     30000 
+
+Max procs per user.
+> maxuprc/E
+maxuprc:
+maxuprc:        29995       
+
+fork would fail if u run out of reservable swap space, or any of the proc,
+thread or lwp limits.
+
+kernel stack can be pageable - segkp
+
+Total no of procs
+> nproc/E
+nproc:
+nproc:          189
+
+Total no. of threads. (includes system threads.)
+> nthread/E
+nthread:
+nthread:        978             
+> 
+
+pid  
+
+0	- sched/swapper
+1	- init
+2	- page deamon
+3	- update(earlier name for fsflush)
+4   - root takes one process - this is because if someone writes a program that
+only forks and now system is full on memory. to kill it root user must know what
+is that process so he should first do a ps. This is why one process is left.
+also if you do a exec ps -cle > logfile -> u could do that..
+
+
+u dont want coredump password programs coz hacker can use the dump to figure out
+the password..so all programs that do a setuid should not coredump.
+
+should be mpid not minpid..
+
+
+> v::print
+{
+v_buf = 0x64
+v_call = 0
+v_proc = 0x7530
+v_maxupttl = 0x752b
+v_nglobpris = 0xaa
+v_maxsyspri = 0x63
+v_clist = 0
+v_maxup = 0x752b
+v_hbuf = 0x1000
+v_hmask = 0xfff
+v_pbuf = 0
+v_sptmap = 0
+v_maxpmem = 0
+v_autoup = 0x1e
+v_bufhwm = 0x1cfe0
+}
+> 
+
+
+vmstat -s
+
+
+child execute first because child usually does exec..so all refcounts will
+decrease. if parent started then parent will change his pages..then cow and we
+will waste memory..
+
+
+signals are user code..so when u do an exec it gets wiped off..so while doing an
+exec u want to go back to default action.
+
+magic number
+0407 impure text 
+0410 text
+0413 page in on demand
+7f"elf" - elf
+#! - shell script
+cafebabe - java
+
+
+yes/no change in ppt slide 39

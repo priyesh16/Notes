@@ -1,0 +1,12 @@
+as structure for address space structure
+
+as_alloc - fork ,exec
+as_free - exit, exec
+as_dup  - fork -> internally calls as_alloc
+as_swapout -> wait for lwps to finish ..
+
+segments are text, stack, etc..
+
+we can map file, device, shared memory.
+
+t

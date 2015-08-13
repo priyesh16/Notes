@@ -1,0 +1,18 @@
+physical memory, vmem and then on top of that kmem
+
+kmem allocates from vmem
+
+slab is one or more pages divided into equal size chunks.
+
+now each chunk is divided into usable buffer and rest..that is suppose u ask for
+40 bytes but the chunk size is say 50 bytes..then 40 bytes is usable buffer and 
+unused 10 is maintained by kmem.
+
+
+magazine container for buffers
+per cpu magazine 
+
+group of pre allocated buffers.
+
+
+sbrk, mmap, malloc

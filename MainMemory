@@ -1,0 +1,116 @@
+Main memory aka physical aka primary. It is lesser than 10ns to go to the chip
+
+register  -1 nanoseconds - 
+cache  - 2ns 
+l2 cache - 20 ns  20 * 10^-9 
+memory - 100 ns   20 * 10^-8
+ssd		- 
+disk	- 10 ms   20 * 10^-3
+
+page size x86 4k and sparc 8k
+
+
+vmstat
+w - swapped out 
+swap - unreserved swap space kb
+free - amount of freemem
+re   - reclaim - page got freed up.
+mf   - minor and major faults
+pi   - pages in pages out
+de   - deficit
+sr   - scan rate, non zero means page deamon is active, not zero is not good.
+in  - interrupts
+sy   - system calls
+cs  - context switches
+
+
+vmstat -p 3
+
+anonymous memory - memory not there in filesystem, heap, stack, cow pages,
+					libray dev/zero mappings.
+
+modify a privately mapped page then do a cow.
+
+pagesize
+
+segment - text, data or stack contiguous pages in virtual memory. 
+
+every page backed up by swap, we have anon structure. vnode and offset,
+refcount. if refcount = 1 then no need to do cow, more than 1 need cow,
+this happens after fork before exec.
+
+
+cache line size - chunk of data that u get from Main memory to cache.
+	if u have good locality in time most of the data frequently used will
+	be inside the cache. 
+
+
+earlier SUNMMU then it is called SPARC ref MMU - 16000 address translation
+later SFMMU for UltraSparc, for 4u and 4v.
+
+
+Table lookup: 
+
+volatile data like io regs(like io busy or not) should not be put into the
+cache.
+
+
+NX is used to prevent buffer overflow attacks, nx - not executable.
+
+
+
+amd64 - virtual address - 16bits - is all ones for kernel or all 0s for
+userland. but u are wasting 4 page structure MMU to access even a small page
+
+
+frame buffer is huge so it can have it is put in lev1 , and kernel is put in
+level 2
+
+
+TLB is on chip , contains virtual address to physical address, TTE is PTE,
+
+It can have only 2^6 entires .. 2^6 * 2^13 ..so half a megabyte of entries.
+this is for data and instruction.
+
+
+table storage buffer TSB is copy of old tlb in main memory..so fast acces..
+hardware has a register which has a TSB. But, after solaris 10 each process
+has its own TSB register.
+
+still the first translation from virtual to physical memory has to be done.
+so we use a hash table called uhmehash.
+
+hat contains machine dependent information like mmu,
+hat strucutre per process.
+
+mmu context can get stolen by other, or page deamon invalidates ur PTE then
+crosscalls are sent (software interrupts) to tell other cpus that this is 
+invalid. but this mmu context switching causes slow performace.
+
+SRAM is used for cache - 2 ns 
+DRAM is capacitory circuitry for main memory - 100s of nanosecond
+
+
+cache hit - 2 cpu cycle , cache miss is 25 cycles
+so 100% cache hit rate is 100% throughput
+99 cache hit rate is 80% throughput
+95 cache hit rate is 50% throughput
+
+
+cache line is say 32bytes, so linked list has low locality of reference
+
+
+level 1 caches are set associative cache, study shows faster ..
+
+instruction cache is accesses sequentially and no writes.
+data cache and instruction cache dont overwrite each other.
+data and instruction cache can be acccessed in parallel.
+
+BSD used PDP or VAX architechture.
+
+l1 - harvard, set associative, write through cache coz it is writing to l2. 
+l2 - write back cache, unified cache, set associative if they can keep the tag
+information
+
+
+

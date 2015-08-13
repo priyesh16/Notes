@@ -1,0 +1,90 @@
+To share -> vnode and offset
+			page frame number
+			refcount
+
+page daemon 
+		->  mod + ref
+		-> vnode/offset
+		-> refcount
+		-> page frame number
+		-> TTE to invalidate the MMU, figure out all TTEs
+		-> not kernel pages
+		-> lock count of how many times the page 
+		-> page is already free
+
+p_hash is 0 means major page fault go to disk.
+
+memory interleaving -> 16 way interleaving and 64 this makes hotplugging tough.
+
+
+intimate shared memory -> backup multiple pages into one big page.
+this is used for database, it cant be swapped out.	
+
+dism-> dynamiccally changing the ism
+
+osm -> optimized shared memory
+
+data name means public datastructure is pointing to a private datastarudture.
+
+mincore - is a system call returns pointer to bytemap..to check which pages are there in mem..
+if it is not there then better to do the calculation again rather than again
+take from the hard disk
+
+freelist has actually freelist and cachelist
+freelist -> we want to free write away
+cachelist ->  we want to keep as long as possible
+
+segment is contiguous pages with common vnode
+
+kernel will lock down a page if it is doing io to the page.
+
+			protection			vnode			reserve swap(backed up by swap ) 
+Text			1101 = D		!=0				=0			 
+Data			1011 = B		!=0				!=0	
+BSS				1011 = B		per page so 0   !=0 
+Stack			1011 = B		0				!=0
+Multithread stak 1011 = B		0				!=0
+
+so locating stack and BSS is done by knowing stack is on top of the address
+space.
+permision is User, execute, wwrite permisison
+can be determined by protection , vnode , swap reserve
+
+log based search means 2 ^ 3 = 8..means i need 3 searches to reach 8 ..
+
+avl trees : loosely balanced binary tree 
+
+avl trees: binary trees if everynode is lower then above then one leaf will
+become a linked list
+
+if one of the nodes is paged out and rotation takes time..so user code is not
+put there but kernel pages cant get swapped out..so kernel can use avl trees.
+
+
+balance = -1 is left heavy if more nodes on left side
++1 means right heavy
+0 means balanced
+
+
+segkp - to manage kernel stack
+
+1) get range of addresses of VA
+2) physical page numbers
+3) proper mmu structures
+4) reserve and allocate swap pages
+5) vnode and offset for page
+6) redzone page - no need of this page to be backed up in swap, also mmu just
+need a page to be said read only
+7) segkp_data
+8) cache it before freeing bcoz someone might need it
+
+
+no need of step 4) for system thread as it will never get swapped.
+
+
+segkpm - all physical memory represented by the memseg structures in kas.
+
+32TB, is max so 2^45..virtual memory is 2^64..so we are using 2^19 of the
+virtual memory.
+
+

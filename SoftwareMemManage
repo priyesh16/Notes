@@ -1,0 +1,44 @@
+mmap map pages to virtual address space (vas). , read and write will first
+copy to buffer then do bcopy because it is not in pages..but for mmap is 
+already pages. also read and write is costly on system call, mmap will 
+lseek with only do paddr + recordsize
+
+
+if flag is set to MAP_FIXED and u give first argument to map the address 
+to where u want then u need to align to page boundary. So figure out page
+size using sysconfig system call get the page size and mask the page size
+bits so u are always aligned.
+
+MAP_PRIVATE or MAP_SHARED to know what to do when page is modified.
+
+
+there should be as many stacks as number of threads so initial thread will
+have its stack segment in stack segment...other threads will be in below
+after library.
+
+MAP_ANON dev/zero mapping - for temporary storage in swap.
+
+/dev/zero - open dev zero ..if page faults then use free list.
+
+MAP_ALIGN - large pages..then first arg is page size..
+
+MAP_TEXT - map large pages , initially for library
+MAP_INITDATA - map large library
+
+
+free ahead is when u bring a bunch of pages then u bring it to free list 
+so if it all we need the page then we have a minor fault and get it in the
+freelist otherwise if we bring the pages and if we dont require the page then
+waste of memory.
+
+
+5 minute rule on free list
+
+
+WILLNEED AND DONTNEED - for reading a file backwords
+
+FREE - if u are rotating an image, no need of initial state - for temporary
+storage.
+
+/dev/zero mapping means mmap dev/zero..this is used because library sometimes
+want bss to be different from the application..thats why we do it.

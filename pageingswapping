@@ -1,0 +1,55 @@
+swapper will swap an entire process, pager swaps only a page
+
+sched is a swapper. sched is parent of init. sched is parent of
+fsflush and page deamon, so sched is the first process on the system.
+
+R - runnable, S - sleeping , O - on proc means running , T - is for stopped.
+sched is put in stopped and not sleeped coz we know sched will run in some
+time so wait in stop rather than sleep.
+
+pagedeamon will also cause a problem..he causes thrashing..
+
+pageout doesn't mean we are out memory - it can be we are synching to fs.
+
+vmstat 3 - w - meaning swapper is alive so low on memory. no. of LWPS the
+swapper swapped..
+SR - scan rate - page daemon is not active so we have enough mem..but check
+swapper first.
+
+bash-4.1$ ps -cLe | grep page
+2     1  SYS  98 ?           0:00 pageout
+2     2  SYS  97 ?           0:01 pageout
+
+pid 1 is pageout_scanner - 2 hand clock
+pid 2 is pagedeamon - write out dirty pages 
+
+
+solaris 11 made into lwp so that we can do accounting.
+
+looppages = all pages - kernel pages
+
+
+page_deamon ...
+
+4% of cpu is 1 clock ticks. 100 clockticks per second.
+805 of cpu is 20 clock ticks
+
+only root user can lock a page in memory. but any user can map a 
+page in memory.
+
+
+maxpgio = maximum no. of pages page daemon can kick out of main memory.
+		this is was earlier 40 which is 2/3 for 60. This is because some study
+		showed 2/3 is best to keep disk busy..also all these are random access..
+		60 rotation per second
+		this is because 3600 rpm. This is 60 hz of ac frequency in US which
+		is usually disk speed.
+		but, now rpm of speed has gone up..there are disk buffers which make
+		the data sequential..thus we bumped up to 400.
+
+
+pagelookup() - after page fault, calls as_fault() to see which segment got page
+fault...most likely vn segment so segvn_fault() is called...then from vnode and
+offset we call pagelookup() to get the page and then put in TLB..
+
+page in swap is called slot

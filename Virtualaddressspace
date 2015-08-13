@@ -1,0 +1,15 @@
+in x86
+
+each process has its own virtual address space
+process when it executes kernel code like after a system call then it uses kas
+or kernel address space
+system threads and process like pagedaemon, fsflush etc also use the kas which
+they share..
+
+in sparc
+
+same as above but instead of having virtual address space divided into two
+ranges like 0000x--- to ffff--- we have two mmu contexts the primary mmu context
+and the secondary mmu context..so when it wants to access kas it uses the
+secondary mmu context..now since each mmu structure is per process we can 
+get unique physical memory address so no conflict

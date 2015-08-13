@@ -1,0 +1,140 @@
+
+-> Parallelism : Two or more events handled simultaneously in the hardware.
+-> Concurrency : Logical or programmatic parallelism
+-> Muliprocessing : More than one CPU and supporting more than a single thread
+					of execution	
+-> Tightly-coupled Multiprocessor : An architecture implemented by using a
+			shared memory and a common OS
+-> Shared Memory : OS communicates between CPUs through memory. The CPUs also
+			share a common kernel.
+
+-> Solaris provides four types of synchronization objects:
+	-> mutex
+	-> condition variables
+		-> used when thread might want to wait on a condition, like say, parent
+		process is waiting for child to exit.
+	-> counting semaphores
+	-> rwlock
+		-> allows multiple readers, single writer locks.
+
+-> Synchronization Process
+	-> thread attempts to get a lock
+		-> lock is free
+			-> thread gets the lock
+		-> lock is held
+			-> thread is placed in a sleep queue(turnstile)
+	-> thread finishes holding the lock and calls release functions
+		-> are there waiters
+			-> if no
+				-> release the lock
+			-> if yes then 
+				-> select the next thread to hold the lock from turnstile and make runnable
+				-> or, hand the lock off to next thread
+				-> wake up all waiters.
+
+-> mutex
+	-> only one thread can own a lock at a time (serialize access to critical data)
+	-> most cost-affective 
+	-> owner is the holder of the lock
+	-> if thread attempts to acquire lock that is held
+		-> spin : enter a tight loop attempting to acquire the lock at each pass
+				  of the loop
+				-> spin mutex
+				-> no context switch from sleep, so fast acquisation
+				-> but consumes a lot of CPU cycles. 
+		-> block : thread is placed on sleep queue, and kernel sends a wake-up
+			once lock is released.
+				-> frees processor to execute other threads
+				-> context switching from sleep so lock acquisition latency
+	-> four types
+		-> adaptive - below 10 
+		-> spin - above 10 will spin 
+		-> driver - driver doesnt know so kernel will figure out,whether spin,
+			adaptive
+		-> default - is adaptive mutex only
+	-> thread attempting to aquire an adaptive mutex blocks or spins based on
+	state of lock owner
+		-> if owner is running on processor, then spin
+		-> if not then block (sleep in turnstile queue)
+
+-> Thundering herd problem is a situation where many threads, that have been
+	blocking for the same resource are all woken up at the same time and make a
+	dash for the resource (here mutex). Run queue increases and CPU utilization
+	increases until a thread gets a resource.
+
+-> Mutex Lock Implementation :
+	-> kthread address always have last 3 bits 0, so we can use these
+			bits to store more information
+	-> The mutex owner(m_owner) field in an adaptive mutex has the address of
+	kthread that owns the lock.
+	-> If other threads are waiting on this lock then the last bit is set to 
+	reflect that there are waiters on the lock.
+
+-> Reader/Writer Locks
+	-> only one thread can own the write lock
+	-> concurrent access for readers
+	-> when writer is holding the lock, no readers
+	-> expensive because u need a mutex to make sure multiple cpus can
+		change the writer count correctly.
+	-> unwritten rule
+		-> dont use if data is changing
+		-> dont use if huge data
+		-> dont use if u dont have multiple readers in one time..use mutex.
+	-> implementation :
+		bit 0 : to signify threads are waiting for the lock
+		bit 1 : atleast one thread is waiting for a write lock
+		bit 2 : if its set : then higher order bits contain address of
+							 holder of write lock
+				if its unset : then higher order bits contain number of 
+							threads holding the lock as read lock.	
+	-> writer starvation if readers dont allow writer to write.
+	-> reader starvation if writers dont allow readers. 
+	-> The policy of next owner is let's favor writers but be fair to readers
+	-> If a writer is releasing the write lock, if there are readers of same or
+	higher priority than highest-priority blocked writer then these readers are
+	given read lock
+	-> An existing reader always grants the lock to a waiting writer even if
+	there are higher-priority readers blocked.
+
+-> Turnstiles :
+	-> A tunstile is data abstration than encapsulates sleep queues and priority
+	inheritance information associated with mutex and rwlocks
+	-> Priority inversion occurs when a higher-priority thread is unable to run
+	coz a lower-priority thread is holding a resource it needs.
+	-> Turnstiles provides priority inheritence mechanism, where a
+	higher-priority thread can "will" its priority to a lower priority thread
+	holding the resource it requires
+	-> earlier sleep queues, but couldnt scale because 64 sleep queues.
+		cant hash it because it takes a lot of time after releasing a lock.
+	-> sleepq per thread bcoz one thread cant wait for more than one lock.
+	-> Each time a kthread is created it has a turnstile associated with it and
+	when it blocks it will lend its turnstile to the lock. This implimentation
+	allows to build priority inversion links and change necessary priorities.
+
+
+-> Kernel Semaphores :
+	-> Semaphores provide a method of synchronizing access to a shareable
+	resource by multiple processes or threads.
+	-> Semaphore can use a binary lock for exclusive access or a counter for
+	concurrent access by multiple threads to a finite number of shared resources
+	-> Counting semaphores
+		-> semaphore value is initialized to a number of shared resources.
+		-> Each time a process needs a resource, the semaphore value is
+		decremented to indicate there is one less of a resource
+		-> When process finishes, the value is incremented
+		-> 0 value tells the calling process that no resources are currently
+		available, and process blocks till resource is free.
+		-> Historically, P operation means attempting to acquire a semaphore,
+		and the V operation releases it.
+
+
+-> if ::threadlist -v 
+no cv_wait() - it is hanging
+mutex_enter() - deadlock
+
+-> sparc -> cas instruction, compare and swap
+	-> cas check if mem register ==  register1
+	-> regester2 = mem register
+
+semaphore -> break prioriy inheritance so no need.
+
