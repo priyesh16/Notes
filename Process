@@ -68,12 +68,18 @@ kernels..that is why monolithic kernel is practical.
 --> interrupts above 10     -> 
 --> interrupts 10 and below ->  
 --> clock is at 10 -> each clock ticks at 100 per sec. lbolt from boot time.
-						real time process needs mode granularity. if hirestick
-						is set to 1. then hireshz = 1000. but this will block
-						all interrupts from 10 and below. so cpu will only do
-						clocking. tickreg and tick_compare is used to get mor
-						granularity. syclick subsystem does this. So if cpu runs
-						at 1GHZ we can get to nanasecond.
+						real time process needs mode 
+granularity. if hirestick
+						is set to 1. then hireshz = 
+1000. but this will block
+						all interrupts from 10 and 
+below. so cpu will only do
+						clocking. tickreg and 
+tick_compare is used to get mor
+						granularity. syclick subsystem 
+does this. So if cpu runs
+						at 1GHZ we can get to 
+nanasecond.
 
 --> each clock tick we have to do so much accounting. 
 

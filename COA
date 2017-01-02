@@ -9,7 +9,8 @@
 -> the first pages it loads are of text segment from the executable file
 	 -> the executable file is divided into pages and loaded to the virtual
 	 memory.
-	 -> when the page is accessed a vnode and offset is created for the page by
+	 -> when the page is accessed a vnode and offset is created for the 
+page by
 	 the filesystem.
 	 -> these pages are put into physical memory.
 -> the next pages are anon pages.
@@ -17,7 +18,8 @@
 	-> Backup reserve is allocated in virtual swap space*.
 -> if physical memory available is greater than desfree 
 		-> page daemon kicks in. 
-		-> For anon memory, the vnode and offset is found at swap space. 
+		-> For anon memory, the vnode and offset is found at swap 
+space. 
 			-> Data is backed up. 
 		-> The page is put into free list by page daemon.
 -> if physical memory is less than desfree
@@ -25,12 +27,14 @@
 			-> anon pages are backed up in swap space.
 			-> all pages of the process are put into free list.
 -> if next instruction executed accesses a memory from that page
-	 -> cpu* searches for virtual address(va) to physical address(pa) mapping in
+	 -> cpu* searches for virtual address(va) to physical address(pa) 
+mapping in
 	 L3 cache, it doesnt find it there.
 	 -> it looks at TLB, it doesn't find it there.
 	 -> then it looks into hme_blks to look up for valid TTE, it is invalid,
 	 this results in a minor page fault.
-	 -> it looks if it is anywhere there in main memory. It is not present so
+	 -> it looks if it is anywhere there in main memory. It is not present 
+so
 	 major page fault
 	 -> for vm2 it waits in breadline and soupline
 	 -> It figures out the memory in filesystem using vnode and offset.
@@ -43,94 +47,141 @@
 
 
 -------------------------------Notes--------------------------------------------
-*	RAM is physical memory(PM), it is called physical memory in the context of
+*	RAM is physical memory(PM), it is called physical memory in the context 
+of
 	virtual memory supported by most OSs.
-*	The kernel which BIOS loads are non loadable kernel modules like genunix.
+*	The kernel which BIOS loads are non loadable kernel modules like 
+genunix.
 *	Physical Memory is RAM.
-*	sched is the first process (pid = 0) that executes and it is also the swapper.
+*	sched is the first process (pid = 0) that executes and it is also the 
+swapper.
 *	kas is unswappable and nonpagable
-	-> page daemon is a kernel process that evicts least recently used pages out
+	-> page daemon is a kernel process that evicts least recently used 
+pages out
 	of RAM, and puts it in the free list.
 	-> once the page daemon has reached a minimum threshold of free memory,
 	swapper is started.
 	-> swapper evicts an entire process out of RAM. 
-	-> nonpagable means page daemon can't evict it out of RAM like kernel pages
+	-> nonpagable means page daemon can't evict it out of RAM like kernel 
+pages
 	and locked pages
-	-> high demand applications that do not want its pages to be paged out lets
+	-> high demand applications that do not want its pages to be paged out 
+lets
 	the OS know of it by locking the pages.
-	-> unswappable means processes that cannot be swapped out of RAM like kernel
+	-> unswappable means processes that cannot be swapped out of RAM like 
+kernel
 	processes.
 *	segments are text, data, bss, heap and stack segment
 *	init is the first user process that is run (pid = 1)
 *	swap space is space we reserve in disk, that is used when paging occurs.
-		-> swap space is used to keep a backup store for anon pages in memory.
-		-> when segvn creates segments on the vas (for example when malloc is
-		called, heap is allocated in the virtual address space). At the same
-		time we reserve the equal amount of allocated space in swap space.
+		-> swap space is used to keep a backup store for anon pages in 
+memory.
+		-> when segvn creates segments on the vas (for example when 
+malloc is
+		called, heap is allocated in the virtual address space). At the 
+same
+		time we reserve the equal amount of allocated space in swap 
+space.
 		Reservation means just keep add up size required in swap, that 
 		will be required when paging or swapping occurs.
-		-> now when you access the memory, a vnode and offset is created by 
+		-> now when you access the memory, a vnode and offset is 
+created by 
 		swapfs just like any other file system.
-		-> when system is low on memory and paging kicks in. If the pages to be
-		swapped are anon pages, it copies the data to the swap space and puts
+		-> when system is low on memory and paging kicks in. If the 
+pages to be
+		swapped are anon pages, it copies the data to the swap space 
+and puts
 		the RAM memory onto free list.
-*	virtual swap space is swap space consisting of both RAM and usual disk swap
-		-> Earlier, it was only disk swap. The issue with this was once you
-		allocate anon pages = size of disk swap space then the application will
-		get a ENOMEM and the user might think this is because he is low on RAM.
-		-> Now they added part of RAM (RAM - kernel pages - some reserve for
-		kernel to use when we are low on memory and page daemon kicks in.) 
+*	virtual swap space is swap space consisting of both RAM and usual disk 
+swap
+		-> Earlier, it was only disk swap. The issue with this was once 
+you
+		allocate anon pages = size of disk swap space then the 
+application will
+		get a ENOMEM and the user might think this is because he is low 
+on RAM.
+		-> Now they added part of RAM (RAM - kernel pages - some 
+reserve for
+		kernel to use when we are low on memory and page daemon kicks 
+in.) 
 
 *	cpu to the OS are virtual cpus (aka hardware threads).
-		-> sockets consists of cores and cores consists of hardware threads.
-		-> Cores are integrated into a circuit die called chip multiprocessor or
+		-> sockets consists of cores and cores consists of hardware 
+threads.
+		-> Cores are integrated into a circuit die called chip 
+multiprocessor or
 		CMP (aka socket or just chip)
-		-> The socket contains multiple cores (usually 4 cores, found to be the
+		-> The socket contains multiple cores (usually 4 cores, found 
+to be the
 		sweet spot.)
-		-> The core is an independent processing unit that can read and execute
-		program instructions, it consists of ALU and instruction pipline sets.
-		-> Different circuitry within the chip does different processing. So if 
-		it were to do one instruction at a time, only one circuitry will be
-		executing while others remain idle. To allow different circuitry to
-		execute in pararallel at the same time.  Each instruction is broken into
-		a series called pipline (like fetch, decode, execute, memory, register
+		-> The core is an independent processing unit that can read and 
+execute
+		program instructions, it consists of ALU and instruction 
+pipline sets.
+		-> Different circuitry within the chip does different 
+processing. So if 
+		it were to do one instruction at a time, only one circuitry 
+will be
+		executing while others remain idle. To allow different 
+circuitry to
+		execute in pararallel at the same time.  Each instruction is 
+broken into
+		a series called pipline (like fetch, decode, execute, memory, 
+register
 		write-back). 
-		-> In SPARC T4-2 there are 2 sockets with 4 cores. Each core has 2 16 stage
+		-> In SPARC T4-2 there are 2 sockets with 4 cores. Each core 
+has 2 16 stage
 		pipline sets. 
-		-> The core is again divided into threads and each thread is a logical
+		-> The core is again divided into threads and each thread is a 
+logical
 		processor to the host OS. Threads within a core share execution
-		resources like ALU and pipline sets, bus, cache and firmware. This
+		resources like ALU and pipline sets, bus, cache and firmware. 
+This
 		sharing allows logical processors to work more efficiently, like
-		allowing to borrow resources from the other when it is stalled. The
-		threads have their own registers so the OS executes software threads on
+		allowing to borrow resources from the other when it is stalled. 
+The
+		threads have their own registers so the OS executes software 
+threads on
 		these threads as if it were a CPU. But OS is aware of cores.
 
-*	Intel's hyperthreading is a specific form of implementing a hardware thread,
+*	Intel's hyperthreading is a specific form of implementing a hardware 
+thread,
 	and is done on out-of-order execution engines.
 		-> In normal hyperthreading, in-order execution causes a simple
-		round-robin to feed dual execution pipes. In this design, 2 or more
-		vector instructions can be executed in parallel, but these instructions
+		round-robin to feed dual execution pipes. In this design, 2 or 
+more
+		vector instructions can be executed in parallel, but these 
+instructions
 		need to come from different threads.
-		-> So, to achieve peak performance, atleast 2 threads per core, 3 is
+		-> So, to achieve peak performance, atleast 2 threads per core, 
+3 is
 		sweet spot.
-		-> In hyperthreaded machines, since it is out-of-order execution pipes,
+		-> In hyperthreaded machines, since it is out-of-order 
+execution pipes,
 		you can hit peak performance with just one thread per core.
 
 *	Earlier CPUs were connected to RAM and devices through Northbridge and
-	SouthBridge. (see lwn article on every programmer should know about memory)
+	SouthBridge. (see lwn article on every programmer should know about 
+memory)
 		-> CPU is connected to NorthBridge through FSB(Front Side Bus)
 		-> NorthBridge contains memory controller and connects to RAM
 		-> NorthBridge connects to SouthBridge.
 		-> SouthBridge aka I/O Bridge, connects to devices
-		-> DRAMs lose data written to it within a fraction of a second. Memory
+		-> DRAMs lose data written to it within a fraction of a second. 
+Memory
 		controllers have logic to read/write or refresh the DRAM.
-*	Now, SMP architectures have multiple CPUs having dedicated RAMS. (see lwn
+*	Now, SMP architectures have multiple CPUs having dedicated RAMS. (see 
+lwn
 	article on every programmer should know about memory)
 		-> Each CPU has an integrated memory controller on the chip. 
-		-> The CPUs are now connected to devices through the SouthBridge.
-		-> The issue with this is that since now all the RAMs have to be made
-		accessible to all the CPUs. But it might have to travel through one or
-		multiple connections to access the RAM. This non-uniformity in accessing
+		-> The CPUs are now connected to devices through the 
+SouthBridge.
+		-> The issue with this is that since now all the RAMs have to 
+be made
+		accessible to all the CPUs. But it might have to travel through 
+one or
+		multiple connections to access the RAM. This non-uniformity in 
+accessing
 		memory has created a better need for memory management and such
 		architectures are called NUMA architecture.
 
@@ -139,280 +190,407 @@
 		-> Thus there will be more instructions to execute.
 		-> But, simple and fewer instruction means, we can better design
 		optimized hardware and thus run CPU at a faster clock rate.
-		-> The hope is that slowdown from executing more instructions is more
+		-> The hope is that slowdown from executing more instructions 
+is more
 		than compensated by running each instruction more quickly.
 		-> Also, unlike CISC most operations run in one clock cycle.
 
 *	spatial locality 
-		-> for code it means there are loops in the code so same code gets
+		-> for code it means there are loops in the code so same code 
+gets
 		executed over and over again
-		-> for data it means the data accessed are close to each other in memory
+		-> for data it means the data accessed are close to each other 
+in memory
 
 *	temporal locality
-		-> for code it means a loop where a function call is called multiple
-		times. The called function maybe located elsewhere in the address space
+		-> for code it means a loop where a function call is called 
+multiple
+		times. The called function maybe located elsewhere in the 
+address space
 		but calls to the function is close in time
-		-> for data it means the data maybe far in the address space but the
+		-> for data it means the data maybe far in the address space 
+but the
 		amount of memory used (the working set) is limited.
 
 
 *	RAMS are really slow compared to processors, so we need caches.
-		-> It is uneconomical to have one big fast RAM. So we keep intermediary
-		caches are used to keep temporary copies that can be accessed by the
+		-> It is uneconomical to have one big fast RAM. So we keep 
+intermediary
+		caches are used to keep temporary copies that can be accessed 
+by the
 		processor very fast. 
-		-> Usually for 4GB RAM we have 4MB cache(1/1000). Also there can be
-		multiple caches L1, L2, L3 but data flow from core to memory need not 
+		-> Usually for 4GB RAM we have 4MB cache(1/1000). Also there 
+can be
+		multiple caches L1, L2, L3 but data flow from core to memory 
+need not 
 		pass through higher level caches.
-		-> Access patterns are different for instructions and data. Also, they
-		acess different regions of memory. Because of this, the L1 caches are 
+		-> Access patterns are different for instructions and data. 
+Also, they
+		acess different regions of memory. Because of this, the L1 
+caches are 
 		usually split into two - one for data the other for code.
 		(Harward architecture) 
-		-> Caches give better performance due to spatial and temporal locality
-		-> Typically, there is going to be atleast 512K of data in cache and
+		-> Caches give better performance due to spatial and temporal 
+locality
+		-> Typically, there is going to be atleast 512K of data in 
+cache and
 		about 128 bytes in registers.
 
 *	Memory Access
-		-> In MIPS programming only 3 occasions you need to access memory.
+		-> In MIPS programming only 3 occasions you need to access 
+memory.
 			-> load instruction -> from memory to register
 			-> store instruction -> from register to memory
-			-> fetch instruction -> from memory to instruction register 
-						-> this is done automatically when program is run
+			-> fetch instruction -> from memory to instruction 
+register 
+						-> this is done automatically 
+when program is run
 
 *	Caches
-		-> By default all data read or written by CPU cores is stored in the
+		-> By default all data read or written by CPU cores is stored 
+in the
 		cache.
-		-> OS implementers and through APIs we can bypass certain caches.
-		-> Since, all memory addresses are cacheable, each cache entry is tagged
+		-> OS implementers and through APIs we can bypass certain 
+caches.
+		-> Since, all memory addresses are cacheable, each cache entry 
+is tagged
 		using the address of the data word in memory.
-		-> So a read or write request to an address (can be physical or virtual)
+		-> So a read or write request to an address (can be physical or 
+virtual)
 		can search the caches for a matching tag.
 
 *	Write-back vs Write-through
-		-> Write-back is when you update main memory, only once cache line is
+		-> Write-back is when you update main memory, only once cache 
+line is
 		evicted, else only update the cache. 
-		-> This is faster, as we don't have to write to slow main memory every
-		time. But if multiple CPUs access the same data, then there will be
-		inconsitency in the actual value modified by one CPU and what is there
+		-> This is faster, as we don't have to write to slow main 
+memory every
+		time. But if multiple CPUs access the same data, then there 
+will be
+		inconsitency in the actual value modified by one CPU and what 
+is there
 		in main memory, which the other CPU will read.
-		-> Write-through updates main memory the same time one CPU updates the
+		-> Write-through updates main memory the same time one CPU 
+updates the
 		cache.
-		-> This write to main memory is aschynchronous so process need not
-		wait for this write to happen. But, if there are many writes then this
-		can cause a backlog of writes to occur. Advantage, is that data at cache
+		-> This write to main memory is aschynchronous so process need 
+not
+		wait for this write to happen. But, if there are many writes 
+then this
+		can cause a backlog of writes to occur. Advantage, is that data 
+at cache
 		and main memory is consistent.
 
 *	Accessing a Block of Data:
 		-> An address represents 1 byte of data.
-		-> Due to spacial locality it is efficient to copy a block of data 
+		-> Due to spacial locality it is efficient to copy a block of 
+data 
 		rather than just a byte.
-		-> So, if we wanted to copy a data block of 32 bytes from memory, we can
-		differentiate these 32 bytes with 5 bits. Bits 00000 represent byte 0 and
+		-> So, if we wanted to copy a data block of 32 bytes from 
+memory, we can
+		differentiate these 32 bytes with 5 bits. Bits 00000 represent 
+byte 0 and
 		bits 11111 represent byte 31.
-		-> Lets say an address in a 32bit OS, has 32 bits, so if you want to
-		copy any address, we copy a block of 32bytes containing that address and
+		-> Lets say an address in a 32bit OS, has 32 bits, so if you 
+want to
+		copy any address, we copy a block of 32bytes containing that 
+address and
 		some bytes before it and some bytes after it.
-		-> To do this we zero out the 5 bits(aka offset) and the rest 27 bits 
-		(aka tag) is the starting address to be copied and we copy untill offset
+		-> To do this we zero out the 5 bits(aka offset) and the rest 
+27 bits 
+		(aka tag) is the starting address to be copied and we copy 
+untill offset
 		11111.
-		-> So now if the actual address we were interested in had an offset of
+		-> So now if the actual address we were interested in had an 
+offset of
 		say 3, we can locate it using tag + offset.
 
 
 *	Cache line
 		-> aka cache block or data block.
-		-> Block of memory that is transferred from physical memory to a memory
+		-> Block of memory that is transferred from physical memory to 
+a memory
 		cache
-		-> basic unit of cache storage, may contain multiple bytes/words of data
-		-> It would be inefficient to just store a word as granularity of the
-		cache, this is because the tagging itself will occupy memory and due to
-		spatial locality it makes sense to group neighbouring memory to be
+		-> basic unit of cache storage, may contain multiple 
+bytes/words of data
+		-> It would be inefficient to just store a word as granularity 
+of the
+		cache, this is because the tagging itself will occupy memory 
+and due to
+		spatial locality it makes sense to group neighbouring memory to 
+be
 		loaded to cache together.
-		-> The cache line is fixed (typically between 16 - 256 bytes), nowdays
+		-> The cache line is fixed (typically between 16 - 256 bytes), 
+nowdays
 		it is 64 bytes.
-		-> Memory address of each cache line is computed by masking the address
-		value according to cache line size. So, for a 64 byte cache, lower 6
+		-> Memory address of each cache line is computed by masking the 
+address
+		value according to cache line size. So, for a 64 byte cache, 
+lower 6
 		bits are zeroed out.
 
 *	Cache slot.
-		-> A cache slot consists of all data words in a cache line, along with the 
+		-> A cache slot consists of all data words in a cache line, 
+along with the 
 		tag and offsets to address all these data words. 
 		-> A slot consists of
 			1) Valid bit : to indicate if slot is empty or not. 
-			2) Dirty bit : to indicate if the data has been modified after
+			2) Dirty bit : to indicate if the data has been 
+modified after
 			placing into the slot.
-			3) Tag : represents the upper address of the address we wanted to
+			3) Tag : represents the upper address of the address we 
+wanted to
 			copy.
-			4) Cache line : This is the actual data itself, aka data block. If
-			cache size is 64 bytes, then offset bits would be 6 bits. Each
+			4) Cache line : This is the actual data itself, aka 
+data block. If
+			cache size is 64 bytes, then offset bits would be 6 
+bits. Each
 			offset representing 1 byte of the data block.
 
 
 *	Fully associative caches
 		-> These cache type is like the one mentioned above.
-		-> Basically, if cache line is 32 bytes, it means offset has to be
-			lg 32 = 5. Now, if you have a 32 bit address then tag size is 
+		-> Basically, if cache line is 32 bytes, it means offset has to 
+be
+			lg 32 = 5. Now, if you have a 32 bit address then tag 
+size is 
 			32 - 5 = 27.
-		-> Imagine a cache with 4MB(2^12), since 5 bits are used for cache lines
+		-> Imagine a cache with 4MB(2^12), since 5 bits are used for 
+cache lines
 			data we have 2^7 = 128 slots.
-		-> To find a slot, match the tag bits of the address to tag of each
-		slot, if it matches then cache hit. Use the rest of the bits in the
+		-> To find a slot, match the tag bits of the address to tag of 
+each
+		slot, if it matches then cache hit. Use the rest of the bits in 
+the
 		address to locate the element in the cache line.
-		-> To match the tag, the hardware has to be complex, hardware can do the
-		match parallely. But, the complexity slows down the overall speed of the
+		-> To match the tag, the hardware has to be complex, hardware 
+can do the
+		match parallely. But, the complexity slows down the overall 
+speed of the
 		cache and is not widely used except for TLBs.
 
 *	Direct mapped caches
-		-> To speed up finding the slot. We can use part of the tag address as a
+		-> To speed up finding the slot. We can use part of the tag 
+address as a
 		hash.
-		-> The hash function is the middle order bits. We don't use high order bits
-		because data and program tend to share the same high bits. For example
-		you want continous 10MB memory highly likely that they share the same
+		-> The hash function is the middle order bits. We don't use 
+high order bits
+		because data and program tend to share the same high bits. For 
+example
+		you want continous 10MB memory highly likely that they share 
+the same
 		high order bits. Lower order bits are anyway used for offset.
-		-> So now all address with the same middle order bits will go to only
+		-> So now all address with the same middle order bits will go 
+to only
 		one slot. 
-		-> Searching is faster as you dont have to search all slots in the
-		cache. If the slot doesn't have the data then no need to do any fancy
-		algorithm to find best slot to evict -> This slot only needs eviction.
-		-> Drawback is, more collisions, no smart eviction -> Even if there are
+		-> Searching is faster as you dont have to search all slots in 
+the
+		cache. If the slot doesn't have the data then no need to do any 
+fancy
+		algorithm to find best slot to evict -> This slot only needs 
+eviction.
+		-> Drawback is, more collisions, no smart eviction -> Even if 
+there are
 		empty slots you have to evict this slot only.
 		-> So, if you have like before 128 slots and 32 bytes per slot.
-		-> To address 128(2^7) slots you need 7 bits. So first 5 bits for
-		offset, next seven bits are to find the slot, and rest 20 bits are for
+		-> To address 128(2^7) slots you need 7 bits. So first 5 bits 
+for
+		offset, next seven bits are to find the slot, and rest 20 bits 
+are for
 		tag.
 		-> To find the slot it is easy,
 			-> based on middle order bits find the slot.
 			-> Check if tags match the tag of the slot
 			-> get required byte from offset bits
-			-> if not fetch the 32 bytes from memory and update valid, dirty and
+			-> if not fetch the 32 bytes from memory and update 
+valid, dirty and
 			tag bits as needed.
 
 
 *	Set Associative Cache
-		-> Set associative is a compromise between direct mapped and fully
+		-> Set associative is a compromise between direct mapped and 
+fully
 		associative caches.
-		-> Here the slots are divided into sets, and addresses can go to a set.
+		-> Here the slots are divided into sets, and addresses can go 
+to a set.
 		This increases the number of slots an address can go into.
 		-> All cache lines within the same set are called aliases.
 		-> Lets assume we have 8 slots per set. So, we have 
 			128/8 = 16 sets (2^4)
-			This is a 8-way set associative cache as we have 8 slots.
+			This is a 8-way set associative cache as we have 8 
+slots.
 		-> So we use 4 middle order bits to get the set.
 		-> To find the slot
 			-> Use middle order bits to find the set.
 			-> Look at all the 8 slots for the matching tag.
 			-> If cache hit, use offset to get the byte.
-			-> If cache miss, then possibly evict, and update memory slot, valid
+			-> If cache miss, then possibly evict, and update 
+memory slot, valid
 			and dirty bit and tag as needed.
-		-> This is a compromise, because u need complex hardware to find the
-		slot, but much lesser than fully associative caches. Also, unlike direct
-		mapped caches you gain N slots to put your data in for a N-way set
+		-> This is a compromise, because u need complex hardware to 
+find the
+		slot, but much lesser than fully associative caches. Also, 
+unlike direct
+		mapped caches you gain N slots to put your data in for a N-way 
+set
 		associative cache.
-		-> In general, increasing associativity above 8 for a single thread
+		-> In general, increasing associativity above 8 for a single 
+thread
 		process have little effects
-		-> For, a mult-core processor it makes a lot of sense especially if they
-		share the L2 cache, but a 16-way set associative cache is very tough to
-		implement, so they share L3 cache and have a subset of cores share the
+		-> For, a mult-core processor it makes a lot of sense 
+especially if they
+		share the L2 cache, but a 16-way set associative cache is very 
+tough to
+		implement, so they share L3 cache and have a subset of cores 
+share the
 		L2 cache.
 
 
 *	Cache misses
-		-> When a cache miss happens, your cache might be full so you need to
-		evict some data out of the cache to have place for adding the new cache
+		-> When a cache miss happens, your cache might be full so you 
+need to
+		evict some data out of the cache to have place for adding the 
+new cache
 		line.
 		-> The slot replacement policies are
 			-> LRU - least recently used.
 			-> LFU - least frequently used
 			-> FIFO - first in first out
-		-> if dirty bit is set, copy cache back to main memory, otherwise
+		-> if dirty bit is set, copy cache back to main memory, 
+otherwise
 		overwrite the memory with new tag, data etc..
-		-> Note that usually,  instructions do not modify the complete cache 
-		line, so before writing anything to cache, it has to be loaded to the
+		-> Note that usually,  instructions do not modify the complete 
+cache 
+		line, so before writing anything to cache, it has to be loaded 
+to the
 		processors registers.
-		-> When new cache line enters, valid bit is 1, dirty bit is 0, tag bits
+		-> When new cache line enters, valid bit is 1, dirty bit is 0, 
+tag bits
 		are copied in, cache line is copied in.
 		-> Cache misses are catogorized into
-			-> compulsory miss : aka cold miss, as there is little or no data in
+			-> compulsory miss : aka cold miss, as there is little 
+or no data in
 			the cache.
-			-> conflict miss : Two cache lines, may map to same slot, so this
-			conflict causes unnecessary eviction of a cache line. This happens
-			only in direct-mapped caches and set-associative caches, not fully
+			-> conflict miss : Two cache lines, may map to same 
+slot, so this
+			conflict causes unnecessary eviction of a cache line. 
+This happens
+			only in direct-mapped caches and set-associative 
+caches, not fully
 			associative caches.
 			-> capacity miss : This can be two types.
-				-> if the cache size was larger, this miss wouldn't have
+				-> if the cache size was larger, this miss 
+wouldn't have
 				occurred. i.e we need more cache slots.
-				-> cache line size is smaller than what you want to access. Eg)
-				you want to access a large int array, and your cache line size
-				is 16 bytes. So any access after 4 elements would result in
+				-> cache line size is smaller than what you 
+want to access. Eg)
+				you want to access a large int array, and your 
+cache line size
+				is 16 bytes. So any access after 4 elements 
+would result in
 				cache miss.
-		-> An eviction from L1d pushes the cache line to L2. If L2 is also full,
-		we might have to evict some cache line from L2. Similarly, for L3. Each
-		eviction is progressively more expensive. So some Intel chips implement
+		-> An eviction from L1d pushes the cache line to L2. If L2 is 
+also full,
+		we might have to evict some cache line from L2. Similarly, for 
+L3. Each
+		eviction is progressively more expensive. So some Intel chips 
+implement
 		inclusive caches.
-		-> Inclusive caches have each cache line in L1d also present in L2. With
-		enough L2 cache, the disadvantage of wasting memory in two places is
+		-> Inclusive caches have each cache line in L1d also present in 
+L2. With
+		enough L2 cache, the disadvantage of wasting memory in two 
+places is
 		minimal, when compared to expensive evicting operation.
-		-> Exclusive caches, are implemented by AMD and VIA, the advantage is
-		that loading a cache line only has to touch L1d and not L2, which could
+		-> Exclusive caches, are implemented by AMD and VIA, the 
+advantage is
+		that loading a cache line only has to touch L1d and not L2, 
+which could
 		be much faster.
 		-> Cost of cache misses
 			register	- 1 clock cycle
 			L1d			- 3 clock cycles
 			L2			- 14 clock cycles
 			Main Memory	- 240 clock cycles
-		-> Though these numbers are high, the entire cost is not paid for each
-		occurance of cache load and miss. This is due to pipelining. If load
-		happens early on in the pipeline, it may happen in parallel with other
+		-> Though these numbers are high, the entire cost is not paid 
+for each
+		occurance of cache load and miss. This is due to pipelining. If 
+load
+		happens early on in the pipeline, it may happen in parallel 
+with other
 		operations.
-		-> Not always we are lucky with pipelining. Especially load operations
-		as we might not know the address until another instruction is executed
-		or because we don't have enough resources for load. For store, we can
-		just make sure execution of following instructions wouldn't affect the
+		-> Not always we are lucky with pipelining. Especially load 
+operations
+		as we might not know the address until another instruction is 
+executed
+		or because we don't have enough resources for load. For store, 
+we can
+		just make sure execution of following instructions wouldn't 
+affect the
 		store.
 
 *	Cache set
-		-> The cache is divided into sets so that we can locate an address
-		quickly. In a directly-mapped cache there are no sets. This makes lookup
+		-> The cache is divided into sets so that we can locate an 
+address
+		quickly. In a directly-mapped cache there are no sets. This 
+makes lookup
 		hard.
 
 *	Word Alignment
-		-> The motivation behind word aligned address is that it will always
+		-> The motivation behind word aligned address is that it will 
+always
 		fall in a cache line.
-		-> So if your words are word aligned, since cache line sizes are 2 to
-		the power of word size, you will never have half of a word in one cache
+		-> So if your words are word aligned, since cache line sizes 
+are 2 to
+		the power of word size, you will never have half of a word in 
+one cache
 		line and the other half in another.
 
 
 *	Cache coherency
-		-> In SMP systems, each CPU needs to be aware of dirty cache lines in
-		other CPUs, otherwise data might have changed while the other CPU uses
+		-> In SMP systems, each CPU needs to be aware of dirty cache 
+lines in
+		other CPUs, otherwise data might have changed while the other 
+CPU uses
 		old data.
 		-> Providing direct access to caches of other processor would be
 		expensive and prove to be a huge bottleneck.
-		-> Processors, instead detect when another process wants to read or
+		-> Processors, instead detect when another process wants to 
+read or
 		write to a certain cache line.
-		-> Otherwise through snooping the processor that first dirtied the cache
-		will automatically send data from its cache to the processor requesting
-		the cache line, instead of picking up from main memory. If the cache
-		line request is for writing then the processor invalidates its data.
-		In some implementations, memory controller notices this direct transfer
+		-> Otherwise through snooping the processor that first dirtied 
+the cache
+		will automatically send data from its cache to the processor 
+requesting
+		the cache line, instead of picking up from main memory. If the 
+cache
+		line request is for writing then the processor invalidates its 
+data.
+		In some implementations, memory controller notices this direct 
+transfer
 		and stores the updated cache line in the main memory.
 		-> Many cache coherency protocols have been developed. The most
 		important of which is MESI.
 		-> Cache coherency means
-			-> A dirty cache line is not present in any other processor's cache
-			-> Clean copies of the same cache line can reside in arbitarly many
+			-> A dirty cache line is not present in any other 
+processor's cache
+			-> Clean copies of the same cache line can reside in 
+arbitarly many
 			caches.
 
 
 *	Direct Memory Access
 		-> A bus connects CPU and main memory
-		-> When IO devices are present, and if the device wants to write to
-		memory, since CPU owns the bus, it should copy contents to registers and
+		-> When IO devices are present, and if the device wants to 
+write to
+		memory, since CPU owns the bus, it should copy contents to 
+registers and
 		then back to main memory.
-		-> But, if IO devices generates the required signals to copy content
+		-> But, if IO devices generates the required signals to copy 
+content
 		into the memory, we can save a lot of CPU involvment
 		-> But now bus is controlled by both CPU and IO devices. So an
-		arbitrator like a hardware device, is required to decide who is in
+		arbitrator like a hardware device, is required to decide who is 
+in
 		charge of the bus.
 
 

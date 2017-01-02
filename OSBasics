@@ -42,11 +42,13 @@ fru(frequently used) and this is how it is different from buffer cache.
 --> character device like dd, fdisk is a character interface for block device
 
 --> on structure
-		--> common - common to all architectures, high level code for system
+		--> common - common to all architectures, high level code for 
+system
 					call
 			os -> 
 			sun4u -> ultrasparc -> M series
-			sun4v -> v - hypervisor -> hardware strands, firmware code
+			sun4v -> v - hypervisor -> hardware strands, firmware 
+code
 			i86 ->
 			pci86 ->
 			amd64 -> 
@@ -63,10 +65,16 @@ fru(frequently used) and this is how it is different from buffer cache.
 			shared memory -> semaphore, message queues
 			pipes         -> fifofs implements pipes
 			signal		  -> 
-			doors		  -> doorfs -> run a thread in someone elses address
-							space. no context switching is done door client
-							tells server to start. Server inherits all
-							properties from the client including TS and
-							priority and once server executes
-							it will tell client to start.
+			doors		  -> doorfs -> run a thread in someone 
+elses address
+							space. no context 
+switching is done door client
+							tells server to start. 
+Server inherits all
+							properties from the 
+client including TS and
+							priority and once 
+server executes
+							it will tell client to 
+start.
 			

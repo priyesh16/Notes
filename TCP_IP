@@ -9,25 +9,35 @@ IP
 TCP
 
 Capturing on 'net0'
-1   0.000000 10.178.242.158 -> 10.134.66.126 TCP 74 50314 > http [SYN] Seq=0 Win=64240 Len=0 MSS=1460 SACK_PERM=1 TSval=104762111 TSecr=0 WS=2
-2   0.221055 10.134.66.126 -> 10.178.242.158 TCP 74 http > 50314 [SYN, ACK] Seq=0 Ack=1 Win=64436 Len=0 SACK_PERM=1 TSval=2642814330 TSecr=104762111 MSS=1460 WS=2
+1   0.000000 10.178.242.158 -> 10.134.66.126 TCP 74 50314 > http [SYN] Seq=0 
+Win=64240 Len=0 MSS=1460 SACK_PERM=1 TSval=104762111 TSecr=0 WS=2
+2   0.221055 10.134.66.126 -> 10.178.242.158 TCP 74 http > 50314 [SYN, ACK] 
+Seq=0 Ack=1 Win=64436 Len=0 SACK_PERM=1 TSval=2642814330 TSecr=104762111 
+MSS=1460 WS=2
 3   0.221100 10.178.242.158 -> 10.134.66.126 TCP 66 50314 > http [ACK] Seq=1
 Ack=1 Win=128872 Len=0 TSval=104762133 TSecr=t2642814330
 4   0.221210 10.178.242.158 -> 10.134.66.126 HTTP 138 HEAD / HTTP/1.0 
-5   0.442105 10.134.66.126 -> 10.178.242.158 TCP 66 http > 50314 [ACK] Seq=1 Ack=73 Win=128872 Len=0 TSval=2642814352 TSecr=104762133
-6   0.444434 10.134.66.126 -> 10.178.242.158 TCP 345 [TCP segment of a reassembled PDU]
+5   0.442105 10.134.66.126 -> 10.178.242.158 TCP 66 http > 50314 [ACK] Seq=1 
+Ack=73 Win=128872 Len=0 TSval=2642814352 TSecr=104762133
+6   0.444434 10.134.66.126 -> 10.178.242.158 TCP 345 [TCP segment of a 
+reassembled PDU]
 7   0.444435 10.134.66.126 -> 10.178.242.158 HTTP 66 HTTP/1.1 302 Found 
-8   0.444475 10.178.242.158 -> 10.134.66.126 TCP 66 50314 > http [ACK] Seq=73 Ack=280 Win=128872 Len=0 TSval=104762155 TSecr=2642814352
-9   0.444483 10.178.242.158 -> 10.134.66.126 TCP 66 50314 > http [ACK] Seq=73 Ack=281 Win=128872 Len=0 TSval=104762155 TSecr=2642814352
-10   0.444539 10.178.242.158 -> 10.134.66.126 TCP 66 50314 > http [FIN, ACK] Seq=73 Ack=281 Win=128872 Len=0 TSval=104762155 TSecr=2642814352
-11   0.665438 10.134.66.126 -> 10.178.242.158 TCP 66 http > 50314 [ACK] Seq=281 Ack=74 Win=128872 Len=0 TSval=2642814374 TSecr=104762155
+8   0.444475 10.178.242.158 -> 10.134.66.126 TCP 66 50314 > http [ACK] Seq=73 
+Ack=280 Win=128872 Len=0 TSval=104762155 TSecr=2642814352
+9   0.444483 10.178.242.158 -> 10.134.66.126 TCP 66 50314 > http [ACK] Seq=73 
+Ack=281 Win=128872 Len=0 TSval=104762155 TSecr=2642814352
+10   0.444539 10.178.242.158 -> 10.134.66.126 TCP 66 50314 > http [FIN, ACK] 
+Seq=73 Ack=281 Win=128872 Len=0 TSval=104762155 TSecr=2642814352
+11   0.665438 10.134.66.126 -> 10.178.242.158 TCP 66 http > 50314 [ACK] Seq=281 
+Ack=74 Win=128872 Len=0 TSval=2642814374 TSecr=104762155
 
 
 -> Seq number is a 32 bit sequence number It can start from any random number 
 called initial sequence number. But tshark displays relative sequence numbers
 starting from 0. Sequence number therefore shows which byte I am sending now.
 
--> Ack is to ack how many bytes have been recieved. So from any given packet we can
+-> Ack is to ack how many bytes have been recieved. So from any given packet we 
+can
 say that the ack number is how many acks we have recieved till now.
 
 

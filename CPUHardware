@@ -14,5 +14,6 @@ SMP is processing of programs by multiple processors that share a common
 operating system and memory.
 
 1 chip is divided into ave processors which have multiple cores and each core
-can have multiple “threads”. The difference between a core and a thread is that
+can have multiple “threads”. The difference between a core and a thread is 
+that
 separate cores have se

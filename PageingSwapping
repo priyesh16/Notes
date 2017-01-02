@@ -39,12 +39,16 @@ page in memory.
 
 
 maxpgio = maximum no. of pages page daemon can kick out of main memory.
-		this is was earlier 40 which is 2/3 for 60. This is because some study
-		showed 2/3 is best to keep disk busy..also all these are random access..
+		this is was earlier 40 which is 2/3 for 60. This is because 
+some study
+		showed 2/3 is best to keep disk busy..also all these are random 
+access..
 		60 rotation per second
-		this is because 3600 rpm. This is 60 hz of ac frequency in US which
+		this is because 3600 rpm. This is 60 hz of ac frequency in US 
+which
 		is usually disk speed.
-		but, now rpm of speed has gone up..there are disk buffers which make
+		but, now rpm of speed has gone up..there are disk buffers which 
+make
 		the data sequential..thus we bumped up to 400.
 
 

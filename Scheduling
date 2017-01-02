@@ -1,6 +1,7 @@
 we didnt use RT for a long time in unix  because
 	-> we couldn't lock pages.
-	-> kernel was not preemptable, then we used multithreaded program, so now 
+	-> kernel was not preemptable, then we used multithreaded program, so 
+now 
 	we can lock the RAM.
 	psrinfo -i to stop interrupts on a cpu
 

@@ -92,7 +92,8 @@ rwlock  -> multiple reader or writer
             unwritten rule
                 -> dont use if data is changing
                 -> dont use if huge data
-                -> dont use if u dont have multiple readers in one time..use mutex.
+                -> dont use if u dont have multiple readers in one time..use 
+mutex.
 
 
 remainder is got by 512 & 2^-1 ie 511

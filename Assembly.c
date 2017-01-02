@@ -5,12 +5,15 @@
  *  -> BL/BH/BX/EBX/RBX: Base index (for use with arrays)
  *  -> CL/CH/CX/ECX/RCX: Counter (for use with loops and strings)
  *  -> DL/DH/DX/EDX/RDX: Extend the precision of the accumulator 
- *			 (e.g. combine 32-bit EAX and EDX for 64-bit integer operations in 32-bit code)
+ *			 (e.g. combine 32-bit EAX and EDX for 64-bit integer 
+operations in 32-bit code)
  *  -> SI/ESI/RSI: Source index for string operations.
  *  -> DI/EDI/RDI: Destination index for string operations.
  *  -> SP/ESP/RSP: Stack pointer for top address of the stack.
- *  -> BP/EBP/RBP: Stack base pointer for holding the address of the current stack frame.
- *  -> IP/EIP/RIP: Instruction pointer. Holds the program counter, the current instruction address.
+ *  -> BP/EBP/RBP: Stack base pointer for holding the address of the current 
+stack frame.
+ *  -> IP/EIP/RIP: Instruction pointer. Holds the program counter, the current 
+instruction address.
  *
  *  Segment registers :
  *
@@ -44,7 +47,8 @@
  *	-> Mostly used for thread local storage and in kernel 
  *	        eg) movl %gs: 0x10,	%eax
  *	-> Below is using implicit segment register, i.e, this value should be
- *	        added to segment register to get the address in the correct segment.
+ *	        added to segment register to get the address in the correct 
+segment.
  *	-> EA = Base + (index * scale) + Disp.
  *	-> Eg) In an array of structs.
  *		typedef struct type_s {
@@ -66,27 +70,35 @@
  *
  *  Calling conventions (For x86-64/System V/Solaris) :
  *
- *  -> Arguments are passed on to the stack in reverse order (the last argument is pushed first)
- *  -> The first six integer or pointer arguments are passed in registers RDI, RSI, RAX
+ *  -> Arguments are passed on to the stack in reverse order (the last argument 
+is pushed first)
+ *  -> The first six integer or pointer arguments are passed in registers RDI, 
+RSI, RAX
  *		RDX, RCX, R8, and R9, 
  *  -> Return value for simple integer types in EAX else on the stack
- *  -> For IA-32, Solaris ABI makes registers EAX, ECX, EDX volatile (scratch, caller-saved, temporary)) 
- *			Non-volatile (preserved, callee-saved) registers are EBX, EDI, ESI, EBP, ESP
+ *  -> For IA-32, Solaris ABI makes registers EAX, ECX, EDX volatile (scratch, 
+caller-saved, temporary)) 
+ *			Non-volatile (preserved, callee-saved) registers are 
+EBX, EDI, ESI, EBP, ESP
  *  -> For x86-64, System-V ABI the calling convention is RDI, RSI, RDX, RCX,
  *			R8, R9, XMM0–7 are caller saved.
  *
- *  Function Prologue :                                                           
+ *  Function Prologue :                                                         
+  
  *
  *  -> Push old bp to stack, for later restoration. 
  *  -> move old stack frames sp onto bp
- *	-> if needed save arguments onto the stack, and save preserved registers.
- *	gcc -msave-args to save args onto stack for debugging, affects performance.
+ *	-> if needed save arguments onto the stack, and save preserved 
+registers.
+ *	gcc -msave-args to save args onto stack for debugging, affects 
+performance.
  *  -> move sp to grow the stack to required stack frame size
  *  ->  main:                           pushl  %ebp
  *		main+1:                         movl   %esp,%ebp
  *		main+3:                         subl   $0x20,%esp
  *	-> Above, can be achieved using enter instruction
- *		enter $0x20, $0 (more complex prologues can be obtained by values other
+ *		enter $0x20, $0 (more complex prologues can be obtained by 
+values other
  *		than 1).
  *
  *
@@ -102,8 +114,10 @@
  *  -> the first two instructions are replaced by leave. So return is basically
  *	leave and ret.
  *	 
- *  -> The stack can be accessed with either bp related addressing or sp related 
- *	addressing, as in stack addresses are computed based on sp or bp (Mostly bp)
+ *  -> The stack can be accessed with either bp related addressing or sp 
+related 
+ *	addressing, as in stack addresses are computed based on sp or bp 
+(Mostly bp)
  *	
  *  Registers for AMD64 :
  *
@@ -123,7 +137,8 @@
  *  Stack for AMD64:
  * 
  *  -> Stack grows down so higher address to lower address. 
- *  -> Stack contents from higher to lower address when a new function is called:
+ *  -> Stack contents from higher to lower address when a new function is 
+called:
  *	-> Stack contents of caller 
  *	-> all higher arguments till 7th argument is saved onto stack
  *	-> return address (RIP)
@@ -160,7 +175,8 @@
  * Trap Frames :
  *
  * -> Created by interrupt or exception(trap) handlers
- * -> Contains values of all registers at the time of trap, also saved onto stack
+ * -> Contains values of all registers at the time of trap, also saved onto 
+stack
  * -> Not visible in user core dump (kernel address space)
  *
 */  

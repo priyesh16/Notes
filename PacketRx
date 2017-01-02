@@ -3,9 +3,11 @@ mac_rx()
 	-> calls mac_rx_ring()
 
 mac_rx_ring()
-	-> This is invoked when packets are recieved by MAC driver in the interrupt
+	-> This is invoked when packets are recieved by MAC driver in the 
+interrupt
 	context.
-	-> The driver provides a ring generation number, if it is same as the one in
+	-> The driver provides a ring generation number, if it is same as the 
+one in
 	mac then forward the packets up the stack else drop them.
 	-> call mac_rx function in mac_impl_t
 	-> possible values of mac_rx are mac_rx_common() and mac_rx_bridge()
@@ -13,10 +15,12 @@ mac_rx_ring()
 
 mac_rx_common()
 	-> This is called for interrupt, poll and bridge rx paths.
-	-> mac_promisc_dispatch() sends a copy of mblk chain to sender mac client.
+	-> mac_promisc_dispatch() sends a copy of mblk chain to sender mac 
+client.
 	If there are promiscuous mode callbacks for the mac, then pass the copy
 	using mac_promisc_dispatch()
-	-> if a ring is specified then process accordingly or else go for software
+	-> if a ring is specified then process accordingly or else go for 
+software
 	classification.
 	-> if hardware ring is specified
 		-> get the group of the ring

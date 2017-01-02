@@ -26,7 +26,8 @@ osm -> optimized shared memory
 
 data name means public datastructure is pointing to a private datastarudture.
 
-mincore - is a system call returns pointer to bytemap..to check which pages are there in mem..
+mincore - is a system call returns pointer to bytemap..to check which pages are 
+there in mem..
 if it is not there then better to do the calculation again rather than again
 take from the hard disk
 
@@ -38,11 +39,15 @@ segment is contiguous pages with common vnode
 
 kernel will lock down a page if it is doing io to the page.
 
-			protection			vnode			reserve swap(backed up by swap ) 
-Text			1101 = D		!=0				=0			 
-Data			1011 = B		!=0				!=0	
+			protection			vnode			
+reserve swap(backed up by swap ) 
+Text			1101 = D		!=0				
+=0			 
+Data			1011 = B		!=0				
+!=0	
 BSS				1011 = B		per page so 0   !=0 
-Stack			1011 = B		0				!=0
+Stack			1011 = B		0				
+!=0
 Multithread stak 1011 = B		0				!=0
 
 so locating stack and BSS is done by knowing stack is on top of the address
